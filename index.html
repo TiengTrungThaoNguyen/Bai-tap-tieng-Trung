@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bài tập tiếng Trung</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    background: #F2ECE0;
+    color: #1C1B19;
+    padding: 16px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  header h1 {
+    font-size: 22px;
+    margin: 0 0 4px;
+    color: #C8372D;
+  }
+  header p {
+    font-size: 13px;
+    color: #5F5E5A;
+    margin: 0;
+  }
+  #tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    justify-content: center;
+  }
+  #tabs button {
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid #D3D1C7;
+    background: #fff;
+    cursor: pointer;
+  }
+  #tabs button.active {
+    background: #C8372D;
+    color: #fff;
+    border-color: #C8372D;
+  }
+  #game-area {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #D3D1C7;
+    min-height: 200px;
+  }
+  button {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid #D3D1C7;
+    background: #fff;
+    cursor: pointer;
+  }
+  button:hover { background: #F2ECE0; }
+  button:disabled { cursor: default; }
+  input[type="text"] {
+    font-family: inherit;
+    font-size: 18px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #D3D1C7;
+    width: 100%;
+  }
+  .grid-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+  }
+  .flip-card {
+    all: unset;
+    cursor: pointer;
+    display: block;
+    height: 120px;
+    perspective: 800px;
+  }
+  .flip-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform .5s;
+    transform-style: preserve-3d;
+  }
+  .flip-front, .flip-back {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: #E6F1FB;
+    color: #0C447C;
+  }
+  .flip-back {
+    transform: rotateY(180deg);
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+  }
+  .answer-slot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 48px;
+    padding: 10px;
+    background: #F2ECE0;
+    border: 1px dashed #B4B2A9;
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+  .bank-slot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .tile {
+    font-size: 17px;
+  }
+  .feedback-ok { color: #3B6D11; }
+  .feedback-bad { color: #A32D2D; }
+  .feedback-warn { color: #854F0B; }
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: #888780;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Bài tập tiếng Trung</h1>
+    <p>Thẻ lật · Ghép cặp · Trắc nghiệm · Sắp xếp câu · Dịch câu</p>
+  </header>
+
+  <div id="tabs"></div>
+  <div id="game-area"></div>
+
+  <footer>Dữ liệu mẫu — thay bằng dữ liệu thật trong file kho đề.</footer>
+</div>
+
+<script>
+var DATA = {
+  the_lat: [
+    {hanzi:'老师', pinyin:'lǎoshī', nghia:'giáo viên'},
+    {hanzi:'学生', pinyin:'xuéshēng', nghia:'học sinh'},
+    {hanzi:'很', pinyin:'hěn', nghia:'rất'},
+    {hanzi:'开心', pinyin:'kāixīn', nghia:'vui vẻ'},
+    {hanzi:'认识', pinyin:'rènshi', nghia:'quen biết, nhận ra'},
+    {hanzi:'喜欢', pinyin:'xǐhuan', nghia:'thích'}
+  ],
+  ghep_cap: [
+    {hanzi:'老师', nghia:'giáo viên'},
+    {hanzi:'学生', nghia:'học sinh'},
+    {hanzi:'朋友', nghia:'bạn bè'},
+    {hanzi:'谢谢', nghia:'cảm ơn'}
+  ],
+  trac_nghiem: [
+    {cau:'"老师" có nghĩa là gì?', opts:['học sinh','giáo viên','bạn bè','trường học'], dap_an:1, giai_thich:'老师 (lǎoshī) nghĩa là giáo viên, thầy/cô giáo.'},
+    {cau:'Từ nào có nghĩa là "rất"?', opts:['很','开心','认识','老师'], dap_an:0, giai_thich:'很 (hěn) là phó từ chỉ mức độ, nghĩa là "rất".'},
+    {cau:'"认识" gần nghĩa nhất với từ nào?', opts:['thích','cảm ơn','quen biết','vui vẻ'], dap_an:2, giai_thich:'认识 (rènshi) dùng khi nói về việc quen biết, nhận ra ai đó.'},
+    {cau:'Câu "我很开心" có nghĩa là gì?', opts:['Tôi rất vui','Tôi là giáo viên','Tôi quen biết bạn','Tôi đi học'], dap_an:0, giai_thich:'我 (tôi) 很 (rất) 开心 (vui) = Tôi rất vui.'}
+  ],
+  sap_xep: [
+    {vi:'Tôi học tiếng Trung mỗi ngày', dung:['我','每天','学习','中文'], pinyin:'Wǒ měitiān xuéxí Zhōngwén', ghi_chu:'Trạng ngữ thời gian (每天) đứng sau chủ ngữ, trước động từ.'},
+    {vi:'Tôi là học sinh', dung:['我','是','学生'], pinyin:'Wǒ shì xuéshēng', ghi_chu:'Cấu trúc cơ bản: chủ ngữ + 是 + danh từ.'},
+    {vi:'Rất vui được quen biết bạn', dung:['认识','你','很','开心'], pinyin:'Rènshi nǐ hěn kāixīn', ghi_chu:'很 bổ nghĩa cho 开心, đặt sau cụm động từ 认识你.'}
+  ],
+  dich_cau: [
+    {vi:'Tôi là giáo viên.', dung:['我是老师。','我是老师'], pinyin:'Wǒ shì lǎoshī.', goi_y:'Dùng cấu trúc 我是 + danh từ nghề nghiệp.'},
+    {vi:'Tôi rất vui.', dung:['我很开心。','我很开心','我很高兴。','我很高兴'], pinyin:'Wǒ hěn kāixīn.', goi_y:'很 đặt trước tính từ chỉ cảm xúc.'},
+    {vi:'Cảm ơn thầy giáo.', dung:['谢谢老师。','谢谢老师'], pinyin:'Xièxie lǎoshī.', goi_y:'Cấu trúc đơn giản: 谢谢 + đối tượng.'}
+  ]
+};
+
+var TABS = [
+  {id:'the_lat', label:'1. Thẻ lật'},
+  {id:'ghep_cap', label:'2. Ghép cặp'},
+  {id:'trac_nghiem', label:'3. Trắc nghiệm'},
+  {id:'sap_xep', label:'4. Sắp xếp câu'},
+  {id:'dich_cau', label:'5. Dịch câu'}
+];
+
+var tabsEl = document.getElementById('tabs');
+var gameArea = document.getElementById('game-area');
+var current = 'the_lat';
+
+function shuffle(arr){
+  var a = arr.slice();
+  for (var i = a.length-1; i>0; i--){
+    var j = Math.floor(Math.random()*(i+1));
+    var t = a[i]; a[i]=a[j]; a[j]=t;
+  }
+  return a;
+}
+
+function renderTabs(){
+  tabsEl.innerHTML = '';
+  TABS.forEach(function(tb){
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = tb.label;
+    if (tb.id === current) btn.className = 'active';
+    btn.onclick = function(){ current = tb.id; renderTabs(); renderGame(); };
+    tabsEl.appendChild(btn);
+  });
+}
+
+function renderGame(){
+  gameArea.innerHTML = '';
+  if (current === 'the_lat') renderTheLat();
+  else if (current === 'ghep_cap') renderGhepCap();
+  else if (current === 'trac_nghiem') renderTracNghiem();
+  else if (current === 'sap_xep') renderSapXep();
+  else if (current === 'dich_cau') renderDichCau();
+}
+
+function renderTheLat(){
+  var grid = document.createElement('div');
+  grid.className = 'grid-cards';
+  DATA.the_lat.forEach(function(c){
+    var wrap = document.createElement('button');
+    wrap.className = 'flip-card';
+    var inner = document.createElement('div');
+    inner.className = 'flip-inner';
+    var front = document.createElement('div');
+    front.className = 'flip-front';
+    front.style.fontSize = '28px';
+    front.style.fontWeight = '600';
+    front.textContent = c.hanzi;
+    var back = document.createElement('div');
+    back.className = 'flip-back';
+    back.innerHTML = '<span style="font-size:14px;">' + c.pinyin + '</span><span style="font-size:13px;opacity:.85;">' + c.nghia + '</span>';
+    inner.appendChild(front); inner.appendChild(back);
+    wrap.appendChild(inner);
+    var flipped = false;
+    wrap.onclick = function(){ flipped = !flipped; inner.style.transform = flipped ? 'rotateY(180deg)' : ''; };
+    grid.appendChild(wrap);
+  });
+  gameArea.appendChild(grid);
+}
+
+function renderGhepCap(){
+  var pairs = DATA.ghep_cap;
+  var left = shuffle(pairs.map(function(p,i){ return {text:p.hanzi, idx:i}; }));
+  var right = shuffle(pairs.map(function(p,i){ return {text:p.nghia, idx:i}; }));
+  var selectedLeft = null, matched = {};
+
+  var wrap = document.createElement('div');
+  var status = document.createElement('div');
+  status.style.cssText = 'font-size:13px;color:#5F5E5A;margin-bottom:10px;';
+  status.textContent = 'Chọn 1 từ Hán tự, sau đó chọn nghĩa tương ứng.';
+  wrap.appendChild(status);
+
+  var cols = document.createElement('div');
+  cols.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:20px;';
+  var leftCol = document.createElement('div');
+  leftCol.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+  var rightCol = document.createElement('div');
+  rightCol.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+
+  function makeBtn(item, isLeft){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = item.text;
+    b.onclick = function(){
+      if (matched[item.idx]) return;
+      if (isLeft){
+        selectedLeft = item.idx;
+        Array.prototype.forEach.call(leftCol.children, function(c){ c.style.borderColor = '#D3D1C7'; });
+        b.style.borderColor = '#378ADD';
+      } else {
+        if (selectedLeft === null) return;
+        if (selectedLeft === item.idx){
+          matched[item.idx] = true;
+          Array.prototype.forEach.call(leftCol.children, function(c, i2){
+            if (left[i2].idx === item.idx){ c.style.background='#EAF3DE'; c.disabled=true; c.style.borderColor='transparent'; }
+          });
+          b.style.background = '#EAF3DE';
+          b.disabled = true;
+          b.style.borderColor = 'transparent';
+          selectedLeft = null;
+          status.textContent = 'Đúng! Ghép tiếp các cặp còn lại.';
+          status.className = 'feedback-ok';
+          if (Object.keys(matched).length === pairs.length){
+            status.textContent = 'Hoàn thành! Đã ghép đúng tất cả ' + pairs.length + ' cặp.';
+          }
+        } else {
+          status.textContent = 'Chưa đúng, thử lại nhé.';
+          status.className = 'feedback-bad';
+          b.style.borderColor = '#E24B4A';
+          setTimeout(function(){ b.style.borderColor = '#D3D1C7'; }, 600);
+        }
+      }
+    };
+    return b;
+  }
+
+  left.forEach(function(item){ leftCol.appendChild(makeBtn(item, true)); });
+  right.forEach(function(item){ rightCol.appendChild(makeBtn(item, false)); });
+  cols.appendChild(leftCol); cols.appendChild(rightCol);
+  wrap.appendChild(cols);
+  gameArea.appendChild(wrap);
+}
+
+function renderTracNghiem(){
+  var qi = 0, score = 0;
+  var wrap = document.createElement('div');
+  gameArea.appendChild(wrap);
+
+  function load(){
+    wrap.innerHTML = '';
+    var q = DATA.trac_nghiem[qi];
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;justify-content:space-between;font-size:13px;color:#5F5E5A;margin-bottom:10px;';
+    header.innerHTML = '<span>Câu ' + (qi+1) + '/' + DATA.trac_nghiem.length + '</span><span>Điểm: ' + score + '</span>';
+    wrap.appendChild(header);
+
+    var qEl = document.createElement('p');
+    qEl.style.cssText = 'font-size:15px;font-weight:600;margin:0 0 12px;';
+    qEl.textContent = q.cau;
+    wrap.appendChild(qEl);
+
+    var optsWrap = document.createElement('div');
+    optsWrap.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+    var feedback = document.createElement('div');
+    feedback.style.cssText = 'font-size:14px;margin-top:10px;min-height:20px;';
+
+    q.opts.forEach(function(opt, i){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = opt;
+      b.style.textAlign = 'left';
+      b.onclick = function(){
+        Array.prototype.forEach.call(optsWrap.children, function(c){ c.disabled = true; });
+        if (i === q.dap_an){
+          score++;
+          b.style.background = '#EAF3DE';
+          b.style.borderColor = 'transparent';
+          feedback.className = 'feedback-ok';
+          feedback.textContent = 'Chính xác! ' + q.giai_thich;
+        } else {
+          b.style.background = '#FCEBEB';
+          b.style.borderColor = 'transparent';
+          optsWrap.children[q.dap_an].style.background = '#EAF3DE';
+          feedback.className = 'feedback-bad';
+          feedback.textContent = 'Chưa đúng. ' + q.giai_thich;
+        }
+        var nextBtn = document.createElement('button');
+        nextBtn.style.marginTop = '10px';
+        nextBtn.textContent = qi < DATA.trac_nghiem.length - 1 ? 'Câu tiếp theo →' : 'Xem kết quả';
+        nextBtn.onclick = function(){
+          qi++;
+          if (qi < DATA.trac_nghiem.length) load();
+          else wrap.innerHTML = '<p style="font-size:15px;">Hoàn thành! Điểm: <strong>' + score + '/' + DATA.trac_nghiem.length + '</strong></p>';
+        };
+        wrap.appendChild(nextBtn);
+      };
+      optsWrap.appendChild(b);
+    });
+    wrap.appendChild(optsWrap);
+    wrap.appendChild(feedback);
+  }
+  load();
+}
+
+function renderSapXep(){
+  var qi = 0, score = 0, locked = false;
+  var wrap = document.createElement('div');
+  gameArea.appendChild(wrap);
+
+  function load(){
+    locked = false;
+    wrap.innerHTML = '';
+    var q = DATA.sap_xep[qi];
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;justify-content:space-between;font-size:13px;color:#5F5E5A;margin-bottom:10px;';
+    header.innerHTML = '<span>Câu ' + (qi+1) + '/' + DATA.sap_xep.length + '</span><span>Điểm: ' + score + '</span>';
+    wrap.appendChild(header);
+
+    var qEl = document.createElement('p');
+    qEl.style.cssText = 'font-size:14px;color:#5F5E5A;margin:0 0 12px;';
+    qEl.textContent = 'Sắp xếp thành câu đúng: "' + q.vi + '"';
+    wrap.appendChild(qEl);
+
+    var answerSlot = document.createElement('div');
+    answerSlot.className = 'answer-slot';
+    var bankSlot = document.createElement('div');
+    bankSlot.className = 'bank-slot';
+
+    function refreshHandlers(){
+      Array.prototype.forEach.call(bankSlot.children, function(t){
+        t.onclick = function(){ if(locked) return; answerSlot.appendChild(t); refreshHandlers(); };
+      });
+      Array.prototype.forEach.call(answerSlot.children, function(t){
+        t.onclick = function(){ if(locked) return; bankSlot.appendChild(t); refreshHandlers(); };
+      });
+    }
+
+    shuffle(q.dung).forEach(function(word){
+      var t = document.createElement('button');
+      t.className = 'tile';
+      t.textContent = word;
+      bankSlot.appendChild(t);
+    });
+    refreshHandlers();
+
+    wrap.appendChild(answerSlot);
+    wrap.appendChild(bankSlot);
+
+    var feedback = document.createElement('div');
+    feedback.style.cssText = 'font-size:14px;margin-bottom:10px;min-height:24px;';
+    wrap.appendChild(feedback);
+
+    var checkBtn = document.createElement('button');
+    checkBtn.textContent = 'Kiểm tra';
+    checkBtn.onclick = function(){
+      if (locked) return;
+      var given = Array.prototype.map.call(answerSlot.children, function(el){ return el.textContent; });
+      if (given.length !== q.dung.length){
+        feedback.className = 'feedback-warn';
+        feedback.textContent = 'Cần dùng hết ' + q.dung.length + ' thẻ.';
+        return;
+      }
+      var ok = given.every(function(w,i){ return w === q.dung[i]; });
+      locked = true;
+      if (ok){
+        score++;
+        feedback.className = 'feedback-ok';
+        feedback.textContent = 'Chính xác! ' + q.pinyin;
+      } else {
+        feedback.className = 'feedback-bad';
+        feedback.innerHTML = 'Chưa đúng. ' + q.ghi_chu + '<br><span style="color:#5F5E5A;font-size:13px;">Đáp án: ' + q.dung.join(' ') + '</span>';
+      }
+      checkBtn.style.display = 'none';
+      var nextBtn = document.createElement('button');
+      nextBtn.textContent = qi < DATA.sap_xep.length - 1 ? 'Câu tiếp theo →' : 'Xem kết quả';
+      nextBtn.onclick = function(){
+        qi++;
+        if (qi < DATA.sap_xep.length) load();
+        else wrap.innerHTML = '<p style="font-size:15px;">Hoàn thành! Điểm: <strong>' + score + '/' + DATA.sap_xep.length + '</strong></p>';
+      };
+      wrap.appendChild(nextBtn);
+    };
+    wrap.appendChild(checkBtn);
+  }
+  load();
+}
+
+function renderDichCau(){
+  var qi = 0, score = 0;
+  var wrap = document.createElement('div');
+  gameArea.appendChild(wrap);
+
+  function normalize(s){ return s.replace(/[，。！？\s]/g, ''); }
+
+  function load(){
+    wrap.innerHTML = '';
+    var q = DATA.dich_cau[qi];
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;justify-content:space-between;font-size:13px;color:#5F5E5A;margin-bottom:10px;';
+    header.innerHTML = '<span>Câu ' + (qi+1) + '/' + DATA.dich_cau.length + '</span><span>Điểm: ' + score + '</span>';
+    wrap.appendChild(header);
+
+    var qEl = document.createElement('p');
+    qEl.style.cssText = 'font-size:15px;font-weight:600;margin:0 0 6px;';
+    qEl.textContent = 'Dịch sang tiếng Trung: "' + q.vi + '"';
+    wrap.appendChild(qEl);
+
+    var hint = document.createElement('p');
+    hint.style.cssText = 'font-size:13px;color:#5F5E5A;margin:0 0 12px;';
+    hint.textContent = 'Gợi ý: ' + q.goi_y;
+    wrap.appendChild(hint);
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Gõ câu tiếng Trung vào đây';
+    input.style.marginBottom = '10px';
+    wrap.appendChild(input);
+
+    var feedback = document.createElement('div');
+    feedback.style.cssText = 'font-size:14px;margin-bottom:10px;min-height:24px;';
+    wrap.appendChild(feedback);
+
+    var checkBtn = document.createElement('button');
+    checkBtn.textContent = 'Kiểm tra';
+    checkBtn.onclick = function(){
+      var given = normalize(input.value);
+      var ok = q.dung.some(function(d){ return normalize(d) === given; });
+      input.disabled = true;
+      checkBtn.style.display = 'none';
+      if (ok){
+        score++;
+        input.style.borderColor = '#639922';
+        feedback.className = 'feedback-ok';
+        feedback.textContent = 'Chính xác! (' + q.pinyin + ')';
+      } else {
+        input.style.borderColor = '#E24B4A';
+        feedback.className = 'feedback-bad';
+        feedback.innerHTML = 'Chưa đúng. Đáp án gợi ý: ' + q.dung[0] + ' <span style="color:#5F5E5A;">(' + q.pinyin + ')</span>';
+      }
+      var nextBtn = document.createElement('button');
+      nextBtn.textContent = qi < DATA.dich_cau.length - 1 ? 'Câu tiếp theo →' : 'Xem kết quả';
+      nextBtn.onclick = function(){
+        qi++;
+        if (qi < DATA.dich_cau.length) load();
+        else wrap.innerHTML = '<p style="font-size:15px;">Hoàn thành! Điểm: <strong>' + score + '/' + DATA.dich_cau.length + '</strong></p>';
+      };
+      wrap.appendChild(nextBtn);
+    };
+    wrap.appendChild(checkBtn);
+  }
+  load();
+}
+
+renderTabs();
+renderGame();
+</script>
+</body>
+</html>
