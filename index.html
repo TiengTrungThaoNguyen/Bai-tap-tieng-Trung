@@ -3,70 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Game HSK1 Tự Động - Tiếng Trung Thảo Nguyên</title>
+    <title>Hệ Thống Trò Chơi HSK1 - Tiếng Trung Thảo Nguyên</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; text-align: center; }
         .container { max-width: 700px; background: white; margin: 20px auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { color: #1B365D; }
+        h1 { color: #1B365D; margin-bottom: 5px; }
+        .subtitle { color: #555; margin-bottom: 25px; font-style: italic; }
         input, select, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { background-color: #1B365D; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button { background-color: #1B365D; color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
         button:hover { background-color: #2c3e50; }
-        .game-area { display: none; margin-top: 20px; background: #fafafa; padding: 20px; border-radius: 8px; border: 1px dashed #1B365D; }
-        .word-card { display: inline-block; padding: 15px; margin: 10px; background: #e8eef5; border-radius: 8px; font-size: 18px; font-weight: bold; color: #1B365D; border-left: 4px solid #1B365D; }
+        .game-area { display: none; margin-top: 25px; background: #fafafa; padding: 25px; border-radius: 10px; border: 2px dashed #1B365D; }
+        
+        /* Giao diện trò chơi nối từ */
+        .matching-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+        .column { display: flex; flex-direction: column; gap: 10px; }
+        .card { padding: 15px; background: #e8eef5; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 18px; font-weight: bold; color: #1B365D; cursor: pointer; user-select: none; transition: 0.2s; }
+        .card:hover { background: #d0e1f9; border-color: #1B365D; }
+        .card.selected { background: #f1c40f; border-color: #f39c12; color: #000; }
+        .card.matched { background: #2ecc71; border-color: #27ae60; color: white; cursor: default; pointer-events: none; }
+        
+        .score-box { font-size: 18px; font-weight: bold; color: #27ae60; margin: 15px 0; background: #eafaf1; padding: 10px; border-radius: 8px; }
+        #loadingText { font-weight: bold; color: #e67e22; margin: 15px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🎮 HỆ THỐNG TRÒ CHƠI TIẾNG TRUNG HSK1 🎮</h1>
-    <p>Dữ liệu tự động cập nhật từ Google Sheets của giáo viên</p>
+    <div class="subtitle">Học viện Tiếng Trung Thảo Nguyên</div>
     
-    <input type="text" id="studentName" placeholder="Nhập Họ và Tên học sinh...">
-    <input type="text" id="studentClass" placeholder="Nhập Lớp học...">
-    
-    <label style="text-align: left; display: block; font-weight: bold; margin-top: 10px;">Chọn bài học muốn chơi:</label>
-    <select id="lessonSelect" onchange="taiDuLieuBaiHoc()">
-        <option value="1">Bài 1 - Chào bạn (你好)</option>
-        <option value="2">Bài 2 - Cảm ơn bạn (谢谢你)</option>
-        <option value="3">Bài 3 - Bạn tên là gì</option>
-        <option value="4">Bài 4 - Cô ấy là giáo viên tiếng Trung của tôi</option>
-        <option value="5">Bài 5 - Con gái cô ấy năm nay 20 tuổi</option>
-        <option value="6">Bài 6 - Tôi biết nói tiếng Trung</option>
-        <option value="7">Bài 7 - Hôm nay ngày mấy</option>
-        <option value="8">Bài 8 - Tôi muốn mua một cốc trà</option>
-        <option value="9">Bài 9 - Bạn làm việc ở đâu</option>
-        <option value="10">Bài 10 - Tôi có thể ngồi đây không</option>
-        <option value="11">Bài 11 - Thời tiết ngày mai thế nào</option>
-        <option value="12">Bài 12 - Ngày mai tôi muốn xem phim</option>
-        <option value="13">Bài 13 - Anh ấy đang học nấu món ăn Trung Quốc</option>
-        <option value="14">Bài 14 - Cô ấy mua rất nhiều quần áo</option>
-        <option value="15">Bài 15 - Tôi đến bằng máy bay</option>
-    </select>
-    
-    <button onclick="moKhuVucChoi()">BẮT ĐẦU CHƠI</button>
+    <div id="setupArea">
+        <input type="text" id="studentName" placeholder="Nhập Họ và Tên học sinh...">
+        <input type="text" id="studentClass" placeholder="Nhập Lớp học (Ví dụ: HSK1-K1)...">
+        
+        <label style="text-align: left; display: block; font-weight: bold; margin-top: 10px;">Chọn bài học cần làm bài tập:</label>
+        <select id="lessonSelect">
+            <option value="1">Bài 1 - Chào bạn (你好)</option>
+            <option value="2">Bài 2 - Cảm ơn bạn (谢谢你)</option>
+            <option value="3">Bài 3 - Bạn tên là gì</option>
+            <option value="4">Bài 4 - Cô ấy là giáo viên tiếng Trung của tôi</option>
+            <option value="5">Bài 5 - Con gái cô ấy năm nay 20 tuổi</option>
+            <option value="6">Bài 6 - Tôi biết nói tiếng Trung</option>
+            <option value="7">Bài 7 - Hôm nay ngày mấy</option>
+            <option value="8">Bài 8 - Tôi muốn mua một cốc trà</option>
+            <option value="9">Bài 9 - Bạn làm việc ở đâu</option>
+            <option value="10">Bài 10 - Tôi có thể ngồi đây không</option>
+            <option value="11">Bài 11 - Thời tiết ngày mai thế nào</option>
+            <option value="12">Bài 12 - Ngày mai tôi muốn xem phim</option>
+            <option value="13">Bài 13 - Anh ấy đang học nấu món ăn Trung Quốc</option>
+            <option value="14">Bài 14 - Cô ấy mua rất nhiều quần áo</option>
+            <option value="15">Bài 15 - Tôi đến bằng máy bay</option>
+        </select>
+        
+        <button onclick="batDauTroChoi()">BẮT ĐẦU LÀM BÀI</button>
+    </div>
 
     <div id="gameArea" class="game-area">
-        <h2>NỘI DUNG TỪ VỰNG BÀI HỌC (TỰ ĐỘNG TỪ EXCEL)</h2>
-        <div id="vocabularyContainer">Đang tải dữ liệu từ Google Sheets...</div>
+        <h2 style="color: #1B365D; margin-top: 0;">🧩 TRÒ CHƠI NỐI TỪ 🧩</h2>
+        <p><i>Hướng dẫn: Bấm vào 1 ô chữ Hán bên trái, sau đó bấm vào ô nghĩa tiếng Việt thích hợp bên phải để nối từ!</i></p>
         
-        <div style="margin-top: 30px; background: #eafaf1; padding: 15px; border-radius: 8px;">
-            <p><strong>Kết quả làm bài hệ thống chấm tự động:</strong> Hoàn thành bài tập</p>
+        <div id="loadingText"></div>
+        
+        <div class="matching-grid">
+            <div class="column" id="chineseColumn"></div>
+            <div class="column" id="vietnameseColumn"></div>
         </div>
-        <button style="background-color: #27ae60;" onclick="guiDiemTuDong()">BẤM ĐỂ NỘP ĐIỂM LÊN FILE CHO CÔ</button>
+        
+        <div class="score-box" id="scoreDisplay">Điểm số hiện tại: 0 / 100</div>
+        <button id="btnNopBai" style="background-color: #27ae60; display: none;" onclick="guiDiemTuDong()">BẤM ĐỂ NỘP ĐIỂM LÊN FILE CHO CÔ</button>
     </div>
 </div>
 
 <script>
-    // 🔴 CHÚ Ý: Bạn hãy lấy link Web App từ file Trả Kết Quả mới (137N_Ubop...) dán vào giữa dấu "" dưới đây nhé:
-    const WEB_APP_URL = "137N_UbopPQxQYmDfkntR_OfIAhuxvsbX5tjHodC03pY";
+    // 🔴 ĐÃ CẤU HÌNH LINK WEB APP NHẬN ĐIỂM CỦA FILE KẾT QUẢ CHUẨN 100%
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycybyVnFEYzQi7V9kcb4BP4UGSUkza-02fh9RjLI_ZX94ggLi00V4Ul7C4cE3nsjtJSyjPA/exec";
     
-    // Đã cấu hình chính xác ID file Bài tập của bạn để tự bốc từ vựng
+    // Đã cấu hình ID file Google Sheets chứa 20 bài học của chị
     const SPREADSHEET_ID = "1Km9ZPK8TDVBBE39eR-yZD-Njkbd5GId7rLZVlaxA0R4";
 
-    function taiDuLieuBaiHoc() {
+    let selectedChineseCard = null;
+    let totalScore = 0;
+    let matchedPairs = 0;
+    const maxPairs = 5; // Lấy 5 từ vựng để tính thang điểm 100 (Mỗi từ 20 điểm)
+
+    function batDauTroChoi() {
+        const name = document.getElementById("studentName").value.trim();
+        if(!name) { alert("Vui lòng điền họ và tên học sinh trước khi chơi!"); return; }
+        
+        document.getElementById("setupArea").style.display = "none";
+        document.getElementById("gameArea").style.display = "block";
+        
+        taiDuLieuVaTaoGame();
+    }
+
+    function taiDuLieuVaTaoGame() {
         const lessonNum = document.getElementById("lessonSelect").value;
-        const container = document.getElementById("vocabularyContainer");
-        container.innerHTML = "Chờ một chút, hệ thống đang kết nối dữ liệu Bài " + lessonNum + "...";
+        const loadingText = document.getElementById("loadingText");
+        loadingText.innerHTML = "🔄 Đang tải từ vựng Bài " + lessonNum + " từ file Excel...";
         
         const sheetName = encodeURIComponent("Bài " + lessonNum + " - Trò Chơi");
         const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
@@ -74,51 +107,122 @@
         fetch(csvUrl)
         .then(response => response.text())
         .then(data => {
+            loadingText.innerHTML = "";
             const lines = data.split('\n').map(line => line.split(','));
-            let htmlContent = "";
+            let wordsList = [];
             
-            // Đọc tự động từ hàng 9 đến hàng 14 trên file Google Sheets câu hỏi của bạn
-            for(let i = 8; i < 14; i++) {
+            // Quét từ hàng số 9 đến hàng 14 trên file Excel để lấy 5 cặp từ vựng đầu tiên
+            for(let i = 8; i < 15; i++) {
                 if(lines[i] && lines[i][1]) {
                     let chuHan = lines[i][1].replace(/"/g, "").trim();
                     let yNghia = lines[i][2] ? lines[i][2].replace(/"/g, "").trim() : "";
                     if(chuHan !== "" && !chuHan.includes("Mặt Trước") && !chuHan.includes("Từ vựng")) {
-                        htmlContent += `<div class="word-card">🇨🇳 ${chuHan} = 🇻🇳 ${yNghia}</div>`;
+                        wordsList.push({ id: wordsList.length, zh: chuHan, vi: yNghia });
                     }
                 }
+                if(wordsList.length >= maxPairs) break;
             }
-            container.innerHTML = htmlContent || "Bài học này hiện tại chưa có dữ liệu từ vựng trên file Google Sheets câu hỏi.";
-        }).catch(err => {
-            container.innerHTML = "Không thể tải được dữ liệu. Hãy chắc chắn bạn đã điền nội dung và mở quyền 'Bất kỳ ai có liên kết đều xem được' cho file Google Sheets bài tập nhé!";
+
+            if(wordsList.length === 0) {
+                loadingText.innerHTML = "❌ Bài học này chưa có dữ liệu từ vựng trên file Excel!";
+                return;
+            }
+
+            hienThiGiaoDienGame(wordsList);
+        })
+        .catch(err => {
+            loadingText.innerHTML = "❌ Lỗi kết nối dữ liệu. Vui lòng kiểm tra lại file bài tập!";
         });
     }
 
-    function moKhuVucChoi() {
-        var name = document.getElementById("studentName").value;
-        if(!name) { alert("Vui lòng điền họ tên học sinh trước khi chơi nhé!"); return; }
-        document.getElementById("gameArea").style.display = "block";
-        taiDuLieuBaiHoc();
+    function hienThiGiaoDienGame(wordsList) {
+        const chineseCol = document.getElementById("chineseColumn");
+        const vietnameseCol = document.getElementById("vietnameseColumn");
+        
+        chineseCol.innerHTML = "";
+        vietnameseCol.innerHTML = "";
+        totalScore = 0;
+        matchedPairs = 0;
+        document.getElementById("scoreDisplay").innerHTML = "Điểm số hiện tại: 0 / 100";
+        document.getElementById("btnNopBai").style.display = "none";
+
+        // Trộn ngẫu nhiên danh sách để cột chữ Hán và tiếng Việt không bị thẳng hàng nhau
+        let chineseList = [...wordsList].sort(() => Math.random() - 0.5);
+        let vietnameseList = [...wordsList].sort(() => Math.random() - 0.5);
+
+        // Tạo các thẻ cột Chữ Hán
+        chineseList.forEach(item => {
+            let card = document.createElement("div");
+            card.className = "card";
+            card.innerHTML = item.zh;
+            card.dataset.id = item.id;
+            card.onclick = () => chonTheChuan(card);
+            chineseCol.appendChild(card);
+        });
+
+        // Tạo các thẻ cột Tiếng Việt
+        vietnameseList.forEach(item => {
+            let card = document.createElement("div");
+            card.className = "card";
+            card.innerHTML = item.vi;
+            card.dataset.id = item.id;
+            card.onclick = () => chonTheNghia(card);
+            vietnameseCol.appendChild(card);
+        });
+    }
+
+    function chonTheChuan(card) {
+        if(card.classList.contains("matched")) return;
+        // Bỏ chọn thẻ cũ nếu có
+        let selected = document.querySelector("#chineseColumn .card.selected");
+        if(selected) selected.classList.remove("selected");
+        
+        card.classList.add("selected");
+        selectedChineseCard = card;
+    }
+
+    function chonTheNghia(card) {
+        if(card.classList.contains("matched") || !selectedChineseCard) return;
+        
+        if(selectedChineseCard.dataset.id === card.dataset.id) {
+            // Đúng: Cộng điểm và đổi màu xanh
+            selectedChineseCard.classList.remove("selected");
+            selectedChineseCard.classList.add("matched");
+            card.classList.add("matched");
+            
+            totalScore += 20;
+            matchedPairs++;
+            document.getElementById("scoreDisplay").innerHTML = "Điểm số hiện tại: " + totalScore + " / 100";
+            selectedChineseCard = null;
+
+            // Nếu đã nối hết các cặp từ
+            if(matchedPairs === maxPairs || totalScore === 100) {
+                document.getElementById("btnNopBai").style.display = "block";
+                alert("🎉 Xuất sắc! Em đã hoàn thành bài tập, hãy bấm nút màu xanh bên dưới để nộp điểm về cho cô nhé.");
+            }
+        } else {
+            // Sai: Báo hiệu chọn lại
+            alert("❌ Sai rồi em ơi, hãy thử chọn lại nghĩa của từ nhé!");
+            selectedChineseCard.classList.remove("selected");
+            selectedChineseCard = null;
+        }
     }
 
     function guiDiemTuDong() {
         var name = document.getElementById("studentName").value;
-        var className = document.getElementById("studentClass").value;
+        var className = document.getElementById("studentClass").value || "Tự Do";
         var lessonNum = document.getElementById("lessonSelect").value;
-
-        if(WEB_APP_URL.includes("DÁN_LINK")) {
-            alert("Lỗi: Chị Thảo Nguyên ơi, chị chưa dán link Web App nhận điểm của file Trả kết quả vào dòng số 64 đâu nhé!");
-            return;
-        }
 
         var data = {
             studentName: name,
             studentClass: className,
             lessonId: "HSK1_BAI_" + (parseInt(lessonNum) < 10 ? "0" + lessonNum : lessonNum),
-            g1: 20, g2: 20, g3: 20, g4: 20, g5: 20,
-            comment: "Hoàn thành bài tập tự động!"
+            g1: totalScore, // Gửi điểm số thật từ trò chơi về cột Game 1
+            g2: 0, g3: 0, g4: 0, g5: 0,
+            comment: "Hoàn thành bài tập nối từ!"
         };
 
-        alert("Hệ thống đang nộp điểm lên file Trả Kết Quả...");
+        alert("Hệ thống đang nộp điểm " + totalScore + "/100 lên file kết quả của cô Thảo Nguyên...");
 
         fetch(WEB_APP_URL, {
             method: "POST",
@@ -126,7 +230,9 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }).then(() => {
-            alert("🎉 NỘP BÀI THÀNH CÔNG! Điểm số đã chạy về file Bảng điểm mới.");
+            alert("🎉 NỘP BÀI THÀNH CÔNG! Điểm của em đã được ghi nhận vào Bảng điểm.");
+            // Reset về màn hình ban đầu
+            window.location.reload();
         }).catch(err => {
             alert("Lỗi gửi điểm: " + err);
         });
