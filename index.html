@@ -14,7 +14,6 @@
         button:hover { background-color: #2c3e50; }
         .game-area { display: none; margin-top: 25px; background: #fafafa; padding: 25px; border-radius: 10px; border: 2px dashed #1B365D; }
         
-        /* Giao diện trò chơi nối từ */
         .matching-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
         .column { display: flex; flex-direction: column; gap: 10px; }
         .card { padding: 15px; background: #e8eef5; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 18px; font-weight: bold; color: #1B365D; cursor: pointer; user-select: none; transition: 0.2s; }
@@ -75,31 +74,27 @@
 </div>
 
 <script>
-    // 🔴 ĐÃ CẤU HÌNH LINK WEB APP NHẬN ĐIỂM CỦA FILE KẾT QUẢ CHUẨN 100%
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxHReE2mA4JGLSBglkqtnAzEBMkmHcot3eiHtvA4OpQoXCOLJSMARRorTN877LzTUHHsQ/exec";
-    
-    // Đã cấu hình ID file Google Sheets chứa 20 bài học của chị
+    // 🔴 CHÚ Ý: Điền link Apps Script nhận điểm của file kết quả vào giữa "" ở dưới:
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycybyVnFEYzQi7V9kcb4BP4UGSUkza-02fh9RjLI_ZX94ggLi00V4Ul7C4cE3nsjtJSyjPA/exec";
     const SPREADSHEET_ID = "1Km9ZPK8TDVBBE39eR-yZD-Njkbd5GId7rLZVlaxA0R4";
 
     let selectedChineseCard = null;
     let totalScore = 0;
     let matchedPairs = 0;
-    const maxPairs = 5; // Lấy 5 từ vựng để tính thang điểm 100 (Mỗi từ 20 điểm)
+    let currentWordsLength = 0;
 
     function batDauTroChoi() {
         const name = document.getElementById("studentName").value.trim();
         if(!name) { alert("Vui lòng điền họ và tên học sinh trước khi chơi!"); return; }
-        
         document.getElementById("setupArea").style.display = "none";
         document.getElementById("gameArea").style.display = "block";
-        
         taiDuLieuVaTaoGame();
     }
 
     function taiDuLieuVaTaoGame() {
         const lessonNum = document.getElementById("lessonSelect").value;
         const loadingText = document.getElementById("loadingText");
-        loadingText.innerHTML = "🔄 Đang tải từ vựng Bài " + lessonNum + " từ file Excel...";
+        loadingText.innerHTML = "🔄 Đang tải từ vựng Bài " + lessonNum + "...";
         
         const sheetName = encodeURIComponent("Bài " + lessonNum + " - Trò Chơi");
         const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
@@ -108,30 +103,62 @@
         .then(response => response.text())
         .then(data => {
             loadingText.innerHTML = "";
-            const lines = data.split('\n').map(line => line.split(','));
+            const lines = data.split('\n').map(line => {
+                let result = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    if (line[i] === '"') inQuotes = !inQuotes;
+                    else if (line[i] === ',' && !inQuotes) {
+                        result.push(current);
+                        current = '';
+                    } else current += line[i];
+                }
+                result.push(current);
+                return result;
+            });
+
             let wordsList = [];
             
-            // Quét từ hàng số 9 đến hàng 14 trên file Excel để lấy 5 cặp từ vựng đầu tiên
-            for(let i = 8; i < 15; i++) {
-                if(lines[i] && lines[i][1]) {
-                    let chuHan = lines[i][1].replace(/"/g, "").trim();
-                    let yNghia = lines[i][2] ? lines[i][2].replace(/"/g, "").trim() : "";
-                    if(chuHan !== "" && !chuHan.includes("Mặt Trước") && !chuHan.includes("Từ vựng")) {
+            // Quét toàn bộ các hàng có dữ liệu trong file Sheets
+            for(let i = 0; i < lines.length; i++) {
+                if(lines[i]) {
+                    // Thử đọc ở cả Cột B (index 1) hoặc Cột C (index 2) để lấy chữ Hán phòng khi lệch cột
+                    let cell1 = lines[i][1] ? lines[i][1].replace(/"/g, "").trim() : "";
+                    let cell2 = lines[i][2] ? lines[i][2].replace(/"/g, "").trim() : "";
+                    let cell3 = lines[i][3] ? lines[i][3].replace(/"/g, "").trim() : "";
+                    
+                    let chuHan = "";
+                    let yNghia = "";
+
+                    // Nếu cột C chứa chữ Hán (thường có độ dài ngắn và chứa ký tự Trung Quốc)
+                    if (cell2 !== "" && !cell2.includes("Mặt Trước") && !cell2.includes("Từ vựng") && !cell2.includes("CONFIGURATION") && !cell2.includes("Mặt Sau")) {
+                        chuHan = cell2;
+                        yNghia = cell3 || cell1;
+                    } 
+                    // Phương án dự phòng nếu chữ Hán nằm ở cột B
+                    else if (cell1 !== "" && !cell1.includes("Mặt Trước") && !cell1.includes("Từ vựng") && !cell1.includes("CONFIGURATION") && cell1.length < 15) {
+                        chuHan = cell1;
+                        yNghia = cell2;
+                    }
+
+                    if (chuHan !== "" && yNghia !== "") {
                         wordsList.push({ id: wordsList.length, zh: chuHan, vi: yNghia });
                     }
                 }
-                if(wordsList.length >= maxPairs) break;
+                if(wordsList.length >= 5) break; // Lấy tối đa 5 từ để chia điểm thang 100
             }
 
             if(wordsList.length === 0) {
-                loadingText.innerHTML = "❌ Bài học này chưa có dữ liệu từ vựng trên file Excel!";
+                loadingText.innerHTML = "❌ Không tìm thấy từ vựng hợp lệ. Cô hãy chắc chắn Tab tính được đặt tên chính xác là: 'Bài " + lessonNum + " - Trò Chơi' nhé!";
                 return;
             }
 
+            currentWordsLength = wordsList.length;
             hienThiGiaoDienGame(wordsList);
         })
         .catch(err => {
-            loadingText.innerHTML = "❌ Lỗi kết nối dữ liệu. Vui lòng kiểm tra lại file bài tập!";
+            loadingText.innerHTML = "❌ Lỗi kết nối dữ liệu. Hãy đảm bảo file Excel đã bật quyền 'Bất kỳ ai có liên kết đều xem được'!";
         });
     }
 
@@ -146,11 +173,9 @@
         document.getElementById("scoreDisplay").innerHTML = "Điểm số hiện tại: 0 / 100";
         document.getElementById("btnNopBai").style.display = "none";
 
-        // Trộn ngẫu nhiên danh sách để cột chữ Hán và tiếng Việt không bị thẳng hàng nhau
         let chineseList = [...wordsList].sort(() => Math.random() - 0.5);
         let vietnameseList = [...wordsList].sort(() => Math.random() - 0.5);
 
-        // Tạo các thẻ cột Chữ Hán
         chineseList.forEach(item => {
             let card = document.createElement("div");
             card.className = "card";
@@ -160,7 +185,6 @@
             chineseCol.appendChild(card);
         });
 
-        // Tạo các thẻ cột Tiếng Việt
         vietnameseList.forEach(item => {
             let card = document.createElement("div");
             card.className = "card";
@@ -173,10 +197,8 @@
 
     function chonTheChuan(card) {
         if(card.classList.contains("matched")) return;
-        // Bỏ chọn thẻ cũ nếu có
         let selected = document.querySelector("#chineseColumn .card.selected");
         if(selected) selected.classList.remove("selected");
-        
         card.classList.add("selected");
         selectedChineseCard = card;
     }
@@ -185,24 +207,24 @@
         if(card.classList.contains("matched") || !selectedChineseCard) return;
         
         if(selectedChineseCard.dataset.id === card.dataset.id) {
-            // Đúng: Cộng điểm và đổi màu xanh
             selectedChineseCard.classList.remove("selected");
             selectedChineseCard.classList.add("matched");
             card.classList.add("matched");
             
-            totalScore += 20;
+            // Tính điểm linh hoạt dựa trên số lượng từ tìm được (tối đa 100 điểm)
+            let scorePerPair = Math.round(100 / currentWordsLength);
             matchedPairs++;
+            totalScore = (matchedPairs === currentWordsLength) ? 100 : (matchedPairs * scorePerPair);
+            
             document.getElementById("scoreDisplay").innerHTML = "Điểm số hiện tại: " + totalScore + " / 100";
             selectedChineseCard = null;
 
-            // Nếu đã nối hết các cặp từ
-            if(matchedPairs === maxPairs || totalScore === 100) {
+            if(matchedPairs === currentWordsLength) {
                 document.getElementById("btnNopBai").style.display = "block";
-                alert("🎉 Xuất sắc! Em đã hoàn thành bài tập, hãy bấm nút màu xanh bên dưới để nộp điểm về cho cô nhé.");
+                alert("🎉 Hoàn thành bài tập! Hãy bấm nút màu xanh bên dưới để nộp điểm.");
             }
         } else {
-            // Sai: Báo hiệu chọn lại
-            alert("❌ Sai rồi em ơi, hãy thử chọn lại nghĩa của từ nhé!");
+            alert("❌ Chưa đúng rồi, chọn lại nhé!");
             selectedChineseCard.classList.remove("selected");
             selectedChineseCard = null;
         }
@@ -217,12 +239,12 @@
             studentName: name,
             studentClass: className,
             lessonId: "HSK1_BAI_" + (parseInt(lessonNum) < 10 ? "0" + lessonNum : lessonNum),
-            g1: totalScore, // Gửi điểm số thật từ trò chơi về cột Game 1
+            g1: totalScore,
             g2: 0, g3: 0, g4: 0, g5: 0,
             comment: "Hoàn thành bài tập nối từ!"
         };
 
-        alert("Hệ thống đang nộp điểm " + totalScore + "/100 lên file kết quả của cô Thảo Nguyên...");
+        alert("Hệ thống đang nộp điểm " + totalScore + "/100 lên file kết quả...");
 
         fetch(WEB_APP_URL, {
             method: "POST",
@@ -230,8 +252,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }).then(() => {
-            alert("🎉 NỘP BÀI THÀNH CÔNG! Điểm của em đã được ghi nhận vào Bảng điểm.");
-            // Reset về màn hình ban đầu
+            alert("🎉 NỘP BÀI THÀNH CÔNG!");
             window.location.reload();
         }).catch(err => {
             alert("Lỗi gửi điểm: " + err);
