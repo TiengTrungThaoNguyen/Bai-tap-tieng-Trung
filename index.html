@@ -1,263 +1,528 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Trò Chơi HSK1 - Tiếng Trung Thảo Nguyên</title>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; text-align: center; }
-        .container { max-width: 700px; background: white; margin: 20px auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { color: #1B365D; margin-bottom: 5px; }
-        .subtitle { color: #555; margin-bottom: 25px; font-style: italic; }
-        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { background-color: #1B365D; color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { background-color: #2c3e50; }
-        .game-area { display: none; margin-top: 25px; background: #fafafa; padding: 25px; border-radius: 10px; border: 2px dashed #1B365D; }
-        
-        .matching-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
-        .column { display: flex; flex-direction: column; gap: 10px; }
-        .card { padding: 15px; background: #e8eef5; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 18px; font-weight: bold; color: #1B365D; cursor: pointer; user-select: none; transition: 0.2s; }
-        .card:hover { background: #d0e1f9; border-color: #1B365D; }
-        .card.selected { background: #f1c40f; border-color: #f39c12; color: #000; }
-        .card.matched { background: #2ecc71; border-color: #27ae60; color: white; cursor: default; pointer-events: none; }
-        
-        .score-box { font-size: 18px; font-weight: bold; color: #27ae60; margin: 15px 0; background: #eafaf1; padding: 10px; border-radius: 8px; }
-        #loadingText { font-weight: bold; color: #e67e22; margin: 15px 0; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bài kiểm tra – Trung tâm Anh ngữ</title>
+<style>
+  :root {
+    --blue:    #1a6bcc;
+    --blue-dk: #0f4a99;
+    --blue-lt: #e8f0fb;
+    --green:   #1a9e5c;
+    --red:     #d63031;
+    --gray:    #64748b;
+    --border:  #cbd5e1;
+    --bg:      #f1f5f9;
+    --white:   #ffffff;
+    --radius:  10px;
+    --shadow:  0 4px 18px rgba(0,0,0,.10);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: #1e293b;
+    min-height: 100vh;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 28px 12px 48px;
+  }
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    width: 100%; max-width: 640px;
+    padding: 36px 32px;
+  }
+  /* ── Header ── */
+  .header { text-align: center; margin-bottom: 28px; }
+  .header .logo {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--blue); color: #fff;
+    border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 700;
+    letter-spacing: .5px; margin-bottom: 14px;
+  }
+  .header h1 { font-size: 20px; font-weight: 700; color: var(--blue-dk); }
+  .header p  { font-size: 13px; color: var(--gray); margin-top: 4px; }
+
+  /* ── Screens ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Info Form ── */
+  .form-row { margin-bottom: 18px; }
+  .form-row label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #334155; }
+  .form-row input {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 15px; outline: none; transition: border-color .2s;
+  }
+  .form-row input:focus { border-color: var(--blue); }
+  .hint { font-size: 12px; color: var(--gray); margin-top: 5px; }
+  .error-msg { color: var(--red); font-size: 12px; margin-top: 5px; display: none; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 11px 22px; border-radius: 8px; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: none; transition: opacity .15s, transform .1s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary   { background: var(--blue);  color: #fff; }
+  .btn-primary:hover { opacity: .88; }
+  .btn-success   { background: var(--green); color: #fff; }
+  .btn-outline   { background: transparent; border: 1.5px solid var(--border); color: #475569; }
+  .btn-outline:hover { background: var(--bg); }
+  .btn-full { width: 100%; }
+
+  /* ── Progress bar ── */
+  .progress-wrap { margin-bottom: 20px; }
+  .progress-info { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray); margin-bottom: 6px; }
+  .progress-bar { height: 6px; background: #e2e8f0; border-radius: 99px; }
+  .progress-fill { height: 100%; background: var(--blue); border-radius: 99px; transition: width .35s ease; }
+
+  /* ── Question ── */
+  .question-label { font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+  .question-text  { font-size: 16px; font-weight: 600; line-height: 1.55; margin-bottom: 20px; }
+
+  .choices { display: flex; flex-direction: column; gap: 10px; }
+  .choice {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; border-radius: 8px;
+    border: 1.5px solid var(--border); cursor: pointer;
+    transition: background .15s, border-color .15s;
+    font-size: 14px;
+  }
+  .choice:hover:not(.locked) { background: var(--blue-lt); border-color: var(--blue); }
+  .choice .badge {
+    width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%;
+    background: #e2e8f0; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #475569;
+  }
+  .choice.selected { border-color: var(--blue); background: var(--blue-lt); }
+  .choice.selected .badge { background: var(--blue); color: #fff; }
+  .choice.correct { border-color: var(--green); background: #edfbf4; }
+  .choice.correct .badge { background: var(--green); color: #fff; }
+  .choice.wrong   { border-color: var(--red);   background: #fef2f2; }
+  .choice.wrong .badge { background: var(--red); color: #fff; }
+  .choice.locked  { cursor: default; }
+
+  .feedback { margin-top: 14px; padding: 10px 14px; border-radius: 8px; font-size: 13px; display: none; }
+  .feedback.correct { background: #edfbf4; color: #15803d; border: 1px solid #bbf7d0; }
+  .feedback.wrong   { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+  .nav-row { display: flex; justify-content: flex-end; margin-top: 22px; }
+
+  /* ── Result screen ── */
+  .score-ring {
+    width: 110px; height: 110px; border-radius: 50%;
+    border: 7px solid var(--blue); display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    margin: 0 auto 18px; background: var(--blue-lt);
+  }
+  .score-ring .big   { font-size: 30px; font-weight: 800; color: var(--blue-dk); }
+  .score-ring .small { font-size: 11px; color: var(--gray); }
+  .result-summary { text-align: center; margin-bottom: 24px; }
+  .result-summary h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .result-summary p  { font-size: 13px; color: var(--gray); }
+
+  .result-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 24px; }
+  .result-table th, .result-table td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  .result-table th { background: var(--bg); font-weight: 600; }
+  .result-table .c { color: var(--green); font-weight: 700; }
+  .result-table .w { color: var(--red);   font-weight: 700; }
+
+  .submit-status { text-align: center; font-size: 13px; color: var(--gray); margin-top: 14px; min-height: 20px; }
+  .submit-status.ok  { color: var(--green); }
+  .submit-status.err { color: var(--red); }
+
+  /* ── Divider ── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+
+  @media(max-width:480px){
+    .card { padding: 24px 16px; }
+    .header h1 { font-size: 17px; }
+  }
+</style>
 </head>
 <body>
+<div class="card">
 
-<div class="container">
-    <h1>🎮 HỆ THỐNG TRÒ CHƠI TIẾNG TRUNG HSK1 🎮</h1>
-    <div class="subtitle">Học viện Tiếng Trung Thảo Nguyên</div>
-    
-    <div id="setupArea">
-        <input type="text" id="studentName" placeholder="Nhập Họ và Tên học sinh...">
-        <input type="text" id="studentClass" placeholder="Nhập Lớp học (Ví dụ: HSK1-K1)...">
-        
-        <label style="text-align: left; display: block; font-weight: bold; margin-top: 10px;">Chọn bài học cần làm bài tập:</label>
-        <select id="lessonSelect">
-            <option value="1">Bài 1 - Chào bạn (你好)</option>
-            <option value="2">Bài 2 - Cảm ơn bạn (谢谢你)</option>
-            <option value="3">Bài 3 - Bạn tên là gì</option>
-            <option value="4">Bài 4 - Cô ấy là giáo viên tiếng Trung của tôi</option>
-            <option value="5">Bài 5 - Con gái cô ấy năm nay 20 tuổi</option>
-            <option value="6">Bài 6 - Tôi biết nói tiếng Trung</option>
-            <option value="7">Bài 7 - Hôm nay ngày mấy</option>
-            <option value="8">Bài 8 - Tôi muốn mua một cốc trà</option>
-            <option value="9">Bài 9 - Bạn làm việc ở đâu</option>
-            <option value="10">Bài 10 - Tôi có thể ngồi đây không</option>
-            <option value="11">Bài 11 - Thời tiết ngày mai thế nào</option>
-            <option value="12">Bài 12 - Ngày mai tôi muốn xem phim</option>
-            <option value="13">Bài 13 - Anh ấy đang học nấu món ăn Trung Quốc</option>
-            <option value="14">Bài 14 - Cô ấy mua rất nhiều quần áo</option>
-            <option value="15">Bài 15 - Tôi đến bằng máy bay</option>
-        </select>
-        
-        <button onclick="batDauTroChoi()">BẮT ĐẦU LÀM BÀI</button>
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SCREEN 1: Nhập thông tin học sinh       -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="screen active" id="screen-info">
+    <div class="header">
+      <div class="logo">✦ Trung tâm Anh ngữ</div>
+      <h1>Bài kiểm tra trực tuyến</h1>
+      <p>Vui lòng điền thông tin trước khi bắt đầu</p>
     </div>
 
-    <div id="gameArea" class="game-area">
-        <h2 style="color: #1B365D; margin-top: 0;">🧩 TRÒ CHƠI NỐI TỪ 🧩</h2>
-        <p><i>Hướng dẫn: Bấm vào 1 ô chữ Hán bên trái, sau đó bấm vào ô nghĩa tiếng Việt thích hợp bên phải để nối từ!</i></p>
-        
-        <div id="loadingText"></div>
-        
-        <div class="matching-grid">
-            <div class="column" id="chineseColumn"></div>
-            <div class="column" id="vietnameseColumn"></div>
-        </div>
-        
-        <div class="score-box" id="scoreDisplay">Điểm số hiện tại: 0 / 100</div>
-        <button id="btnNopBai" style="background-color: #27ae60; display: none;" onclick="guiDiemTuDong()">BẤM ĐỂ NỘP ĐIỂM LÊN FILE CHO CÔ</button>
+    <div class="form-row">
+      <label for="inp-name">Họ và tên học sinh <span style="color:var(--red)">*</span></label>
+      <input id="inp-name" type="text" placeholder="VD: Nguyễn Văn A" autocomplete="name">
+      <div class="error-msg" id="err-name">Vui lòng nhập họ tên.</div>
     </div>
-</div>
+
+    <div class="form-row">
+      <label for="inp-class">Mã lớp <span style="color:var(--red)">*</span></label>
+      <input id="inp-class" type="text" placeholder="VD: SC1-T2" autocomplete="off"
+             style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+      <div class="hint">Nhận mã lớp từ giáo viên của bạn (VD: SC1-T2, TC1-T6)</div>
+      <div class="error-msg" id="err-class">Vui lòng nhập mã lớp hợp lệ (VD: SC1-T2).</div>
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="startQuiz()">Bắt đầu làm bài →</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SCREEN 2: Câu hỏi                       -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="screen" id="screen-quiz">
+    <div class="header" style="margin-bottom:18px">
+      <div class="logo">✦ Trung tâm Anh ngữ</div>
+      <h1 id="quiz-title">Bài kiểm tra</h1>
+      <p id="quiz-student-label" style="color:var(--blue);font-weight:600"></p>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-info">
+        <span id="prog-text">Câu 1 / 10</span>
+        <span id="prog-pct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="question-label" id="q-label">Câu 1</div>
+    <div class="question-text" id="q-text"></div>
+    <div class="choices" id="q-choices"></div>
+    <div class="feedback" id="q-feedback"></div>
+
+    <div class="nav-row">
+      <button class="btn btn-primary" id="btn-next" onclick="nextQuestion()" disabled>Câu tiếp →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SCREEN 3: Kết quả                       -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="screen" id="screen-result">
+    <div class="header" style="margin-bottom:20px">
+      <div class="logo">✦ Trung tâm Anh ngữ</div>
+      <h1>Kết quả bài kiểm tra</h1>
+    </div>
+
+    <div class="result-summary">
+      <div class="score-ring">
+        <div class="big" id="res-score">0</div>
+        <div class="small">/ <span id="res-total">10</span> câu</div>
+      </div>
+      <h2 id="res-grade">–</h2>
+      <p id="res-student"></p>
+    </div>
+
+    <table class="result-table" id="res-table">
+      <thead><tr><th>#</th><th>Câu hỏi</th><th>Kết quả</th></tr></thead>
+      <tbody id="res-tbody"></tbody>
+    </table>
+
+    <button class="btn btn-success btn-full" id="btn-submit" onclick="submitResult()">
+      ☁ Gửi kết quả lên bảng điểm
+    </button>
+    <div class="submit-status" id="submit-status"></div>
+
+    <hr class="divider">
+    <button class="btn btn-outline btn-full" onclick="resetQuiz()">← Làm lại từ đầu</button>
+  </div>
+
+</div><!-- /card -->
 
 <script>
-    // 🔴 CHÚ Ý: Điền link Apps Script nhận điểm của file kết quả vào giữa "" ở dưới:
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycybyVnFEYzQi7V9kcb4BP4UGSUkza-02fh9RjLI_ZX94ggLi00V4Ul7C4cE3nsjtJSyjPA/exec";
-    const SPREADSHEET_ID = "1Km9ZPK8TDVBBE39eR-yZD-Njkbd5GId7rLZVlaxA0R4";
+// ═══════════════════════════════════════════════════════════════
+// CẤU HÌNH — chỉ chỉnh 2 dòng này
+// ═══════════════════════════════════════════════════════════════
+const SHEET_URL = "https://script.google.com/macros/s/PASTE_YOUR_DEPLOYED_APPS_SCRIPT_URL_HERE/exec";
+const QUIZ_TITLE = "Kiểm tra từ vựng – Unit 1";
 
-    let selectedChineseCard = null;
-    let totalScore = 0;
-    let matchedPairs = 0;
-    let currentWordsLength = 0;
+// ═══════════════════════════════════════════════════════════════
+// DỮ LIỆU CÂU HỎI — thêm/sửa tại đây
+// ═══════════════════════════════════════════════════════════════
+const QUESTIONS = [
+  {
+    q: "Choose the correct meaning of 'abundant'.",
+    choices: ["Rare and expensive", "Available in large quantities", "Difficult to find", "Very small in size"],
+    correct: 1
+  },
+  {
+    q: "Which word is a synonym of 'happy'?",
+    choices: ["Sad", "Angry", "Joyful", "Tired"],
+    correct: 2
+  },
+  {
+    q: "Fill in the blank: 'She ___ to school every day.'",
+    choices: ["go", "goes", "going", "gone"],
+    correct: 1
+  },
+  {
+    q: "What is the past tense of 'run'?",
+    choices: ["Runned", "Ran", "Running", "Runs"],
+    correct: 1
+  },
+  {
+    q: "Choose the correct article: '___ apple a day keeps the doctor away.'",
+    choices: ["A", "An", "The", "No article"],
+    correct: 1
+  },
+  {
+    q: "Which sentence is grammatically correct?",
+    choices: [
+      "He don't like coffee.",
+      "She doesn't likes coffee.",
+      "They doesn't drink coffee.",
+      "We don't drink coffee."
+    ],
+    correct: 3
+  },
+  {
+    q: "What does 'enormous' mean?",
+    choices: ["Very small", "Very fast", "Very large", "Very slow"],
+    correct: 2
+  },
+  {
+    q: "Choose the opposite of 'ancient'.",
+    choices: ["Old", "Modern", "Historical", "Classic"],
+    correct: 1
+  },
+  {
+    q: "Which word best completes: 'The student was ___ with the difficult exam.'",
+    choices: ["thrilled", "delighted", "struggling", "excited"],
+    correct: 2
+  },
+  {
+    q: "Identify the noun in this sentence: 'The quick brown fox jumps over the lazy dog.'",
+    choices: ["Quick", "Jumps", "Fox", "Lazy"],
+    correct: 2
+  }
+];
 
-    function batDauTroChoi() {
-        const name = document.getElementById("studentName").value.trim();
-        if(!name) { alert("Vui lòng điền họ và tên học sinh trước khi chơi!"); return; }
-        document.getElementById("setupArea").style.display = "none";
-        document.getElementById("gameArea").style.display = "block";
-        taiDuLieuVaTaoGame();
-    }
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let studentName = "";
+let classCode   = "";
+let current     = 0;
+let answers     = [];   // {chosen, correct: bool}
+let locked      = false;
 
-    function taiDuLieuVaTaoGame() {
-        const lessonNum = document.getElementById("lessonSelect").value;
-        const loadingText = document.getElementById("loadingText");
-        loadingText.innerHTML = "🔄 Đang tải từ vựng Bài " + lessonNum + "...";
-        
-        const sheetName = encodeURIComponent("Bài " + lessonNum + " - Trò Chơi");
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
-        
-        fetch(csvUrl)
-        .then(response => response.text())
-        .then(data => {
-            loadingText.innerHTML = "";
-            const lines = data.split('\n').map(line => {
-                let result = [];
-                let current = '';
-                let inQuotes = false;
-                for (let i = 0; i < line.length; i++) {
-                    if (line[i] === '"') inQuotes = !inQuotes;
-                    else if (line[i] === ',' && !inQuotes) {
-                        result.push(current);
-                        current = '';
-                    } else current += line[i];
-                }
-                result.push(current);
-                return result;
-            });
+const LABELS = ["A","B","C","D"];
 
-            let wordsList = [];
-            
-            // Quét toàn bộ các hàng có dữ liệu trong file Sheets
-            for(let i = 0; i < lines.length; i++) {
-                if(lines[i]) {
-                    // Thử đọc ở cả Cột B (index 1) hoặc Cột C (index 2) để lấy chữ Hán phòng khi lệch cột
-                    let cell1 = lines[i][1] ? lines[i][1].replace(/"/g, "").trim() : "";
-                    let cell2 = lines[i][2] ? lines[i][2].replace(/"/g, "").trim() : "";
-                    let cell3 = lines[i][3] ? lines[i][3].replace(/"/g, "").trim() : "";
-                    
-                    let chuHan = "";
-                    let yNghia = "";
+// ─── helpers ───
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo({top:0, behavior:"smooth"});
+}
 
-                    // Nếu cột C chứa chữ Hán (thường có độ dài ngắn và chứa ký tự Trung Quốc)
-                    if (cell2 !== "" && !cell2.includes("Mặt Trước") && !cell2.includes("Từ vựng") && !cell2.includes("CONFIGURATION") && !cell2.includes("Mặt Sau")) {
-                        chuHan = cell2;
-                        yNghia = cell3 || cell1;
-                    } 
-                    // Phương án dự phòng nếu chữ Hán nằm ở cột B
-                    else if (cell1 !== "" && !cell1.includes("Mặt Trước") && !cell1.includes("Từ vựng") && !cell1.includes("CONFIGURATION") && cell1.length < 15) {
-                        chuHan = cell1;
-                        yNghia = cell2;
-                    }
+// ─── Screen 1: Start ───
+function startQuiz() {
+  const name  = document.getElementById("inp-name").value.trim();
+  const code  = document.getElementById("inp-class").value.trim().toUpperCase();
+  const errN  = document.getElementById("err-name");
+  const errC  = document.getElementById("err-class");
+  let ok = true;
 
-                    if (chuHan !== "" && yNghia !== "") {
-                        wordsList.push({ id: wordsList.length, zh: chuHan, vi: yNghia });
-                    }
-                }
-                if(wordsList.length >= 5) break; // Lấy tối đa 5 từ để chia điểm thang 100
-            }
+  errN.style.display = "none";
+  errC.style.display = "none";
 
-            if(wordsList.length === 0) {
-                loadingText.innerHTML = "❌ Không tìm thấy từ vựng hợp lệ. Cô hãy chắc chắn Tab tính được đặt tên chính xác là: 'Bài " + lessonNum + " - Trò Chơi' nhé!";
-                return;
-            }
+  if (!name) { errN.style.display = "block"; ok = false; }
 
-            currentWordsLength = wordsList.length;
-            hienThiGiaoDienGame(wordsList);
-        })
-        .catch(err => {
-            loadingText.innerHTML = "❌ Lỗi kết nối dữ liệu. Hãy đảm bảo file Excel đã bật quyền 'Bất kỳ ai có liên kết đều xem được'!";
-        });
-    }
+  // Validate mã lớp: chữ + số, gạch ngang, ít nhất 3 ký tự
+  if (!code || !/^[A-Z0-9]{2,6}-[A-Z0-9]{1,4}$/.test(code)) {
+    errC.style.display = "block"; ok = false;
+  }
 
-    function hienThiGiaoDienGame(wordsList) {
-        const chineseCol = document.getElementById("chineseColumn");
-        const vietnameseCol = document.getElementById("vietnameseColumn");
-        
-        chineseCol.innerHTML = "";
-        vietnameseCol.innerHTML = "";
-        totalScore = 0;
-        matchedPairs = 0;
-        document.getElementById("scoreDisplay").innerHTML = "Điểm số hiện tại: 0 / 100";
-        document.getElementById("btnNopBai").style.display = "none";
+  if (!ok) return;
 
-        let chineseList = [...wordsList].sort(() => Math.random() - 0.5);
-        let vietnameseList = [...wordsList].sort(() => Math.random() - 0.5);
+  studentName = name;
+  classCode   = code;
+  answers     = [];
+  current     = 0;
 
-        chineseList.forEach(item => {
-            let card = document.createElement("div");
-            card.className = "card";
-            card.innerHTML = item.zh;
-            card.dataset.id = item.id;
-            card.onclick = () => chonTheChuan(card);
-            chineseCol.appendChild(card);
-        });
+  document.getElementById("quiz-title").textContent = QUIZ_TITLE;
+  document.getElementById("quiz-student-label").textContent =
+    `${studentName}  |  Lớp: ${classCode}`;
 
-        vietnameseList.forEach(item => {
-            let card = document.createElement("div");
-            card.className = "card";
-            card.innerHTML = item.vi;
-            card.dataset.id = item.id;
-            card.onclick = () => chonTheNghia(card);
-            vietnameseCol.appendChild(card);
-        });
-    }
+  renderQuestion();
+  show("screen-quiz");
+}
 
-    function chonTheChuan(card) {
-        if(card.classList.contains("matched")) return;
-        let selected = document.querySelector("#chineseColumn .card.selected");
-        if(selected) selected.classList.remove("selected");
-        card.classList.add("selected");
-        selectedChineseCard = card;
-    }
+// ─── Screen 2: Question ───
+function renderQuestion() {
+  const total = QUESTIONS.length;
+  const idx   = current;
+  const q     = QUESTIONS[idx];
+  locked      = false;
 
-    function chonTheNghia(card) {
-        if(card.classList.contains("matched") || !selectedChineseCard) return;
-        
-        if(selectedChineseCard.dataset.id === card.dataset.id) {
-            selectedChineseCard.classList.remove("selected");
-            selectedChineseCard.classList.add("matched");
-            card.classList.add("matched");
-            
-            // Tính điểm linh hoạt dựa trên số lượng từ tìm được (tối đa 100 điểm)
-            let scorePerPair = Math.round(100 / currentWordsLength);
-            matchedPairs++;
-            totalScore = (matchedPairs === currentWordsLength) ? 100 : (matchedPairs * scorePerPair);
-            
-            document.getElementById("scoreDisplay").innerHTML = "Điểm số hiện tại: " + totalScore + " / 100";
-            selectedChineseCard = null;
+  // Progress
+  const pct = Math.round((idx / total) * 100);
+  document.getElementById("prog-text").textContent = `Câu ${idx+1} / ${total}`;
+  document.getElementById("prog-pct").textContent  = `${pct}%`;
+  document.getElementById("prog-fill").style.width = `${pct}%`;
 
-            if(matchedPairs === currentWordsLength) {
-                document.getElementById("btnNopBai").style.display = "block";
-                alert("🎉 Hoàn thành bài tập! Hãy bấm nút màu xanh bên dưới để nộp điểm.");
-            }
-        } else {
-            alert("❌ Chưa đúng rồi, chọn lại nhé!");
-            selectedChineseCard.classList.remove("selected");
-            selectedChineseCard = null;
-        }
-    }
+  document.getElementById("q-label").textContent = `Câu ${idx+1}`;
+  document.getElementById("q-text").textContent  = q.q;
 
-    function guiDiemTuDong() {
-        var name = document.getElementById("studentName").value;
-        var className = document.getElementById("studentClass").value || "Tự Do";
-        var lessonNum = document.getElementById("lessonSelect").value;
+  const fb = document.getElementById("q-feedback");
+  fb.style.display = "none"; fb.className = "feedback";
 
-        var data = {
-            studentName: name,
-            studentClass: className,
-            lessonId: "HSK1_BAI_" + (parseInt(lessonNum) < 10 ? "0" + lessonNum : lessonNum),
-            g1: totalScore,
-            g2: 0, g3: 0, g4: 0, g5: 0,
-            comment: "Hoàn thành bài tập nối từ!"
-        };
+  document.getElementById("btn-next").disabled = true;
 
-        alert("Hệ thống đang nộp điểm " + totalScore + "/100 lên file kết quả...");
+  const choicesEl = document.getElementById("q-choices");
+  choicesEl.innerHTML = "";
+  q.choices.forEach((c, i) => {
+    const div = document.createElement("div");
+    div.className = "choice";
+    div.innerHTML = `<div class="badge">${LABELS[i]}</div><span>${c}</span>`;
+    div.onclick = () => selectChoice(i);
+    choicesEl.appendChild(div);
+  });
 
-        fetch(WEB_APP_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-        }).then(() => {
-            alert("🎉 NỘP BÀI THÀNH CÔNG!");
-            window.location.reload();
-        }).catch(err => {
-            alert("Lỗi gửi điểm: " + err);
-        });
-    }
+  // Update next button label
+  const btn = document.getElementById("btn-next");
+  btn.textContent = (idx === total - 1) ? "Xem kết quả ✓" : "Câu tiếp →";
+}
+
+function selectChoice(chosen) {
+  if (locked) return;
+  locked = true;
+
+  const q       = QUESTIONS[current];
+  const correct = q.correct;
+  const isRight = chosen === correct;
+  const choices = document.querySelectorAll(".choice");
+
+  choices.forEach((el, i) => {
+    el.classList.add("locked");
+    if (i === correct) el.classList.add("correct");
+    if (i === chosen && !isRight) el.classList.add("wrong");
+    if (i === chosen && isRight)  el.classList.add("selected");
+  });
+
+  const fb = document.getElementById("q-feedback");
+  fb.style.display = "block";
+  if (isRight) {
+    fb.className = "feedback correct";
+    fb.textContent = "✓ Chính xác!";
+  } else {
+    fb.className = "feedback wrong";
+    fb.textContent = `✗ Đáp án đúng là: ${LABELS[correct]}. ${q.choices[correct]}`;
+  }
+
+  answers.push({ chosen, correct: isRight });
+  document.getElementById("btn-next").disabled = false;
+}
+
+function nextQuestion() {
+  current++;
+  if (current < QUESTIONS.length) {
+    renderQuestion();
+  } else {
+    showResult();
+  }
+}
+
+// ─── Screen 3: Result ───
+function showResult() {
+  const total  = QUESTIONS.length;
+  const score  = answers.filter(a => a.correct).length;
+  const pct    = Math.round((score / total) * 100);
+
+  document.getElementById("res-score").textContent = score;
+  document.getElementById("res-total").textContent = total;
+  document.getElementById("res-student").textContent =
+    `${studentName}  •  Lớp: ${classCode}`;
+
+  let grade = "";
+  if (pct >= 90) grade = "🏆 Xuất sắc!";
+  else if (pct >= 75) grade = "🌟 Giỏi";
+  else if (pct >= 60) grade = "👍 Khá";
+  else if (pct >= 50) grade = "📝 Trung bình";
+  else grade = "💪 Cần ôn thêm";
+  document.getElementById("res-grade").textContent = grade;
+
+  // Detail table
+  const tbody = document.getElementById("res-tbody");
+  tbody.innerHTML = "";
+  answers.forEach((a, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td style="max-width:260px">${QUESTIONS[i].q}</td>
+      <td class="${a.correct ? "c":"w"}">${a.correct ? "✓ Đúng" : "✗ Sai"}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("btn-submit").disabled = false;
+  document.getElementById("submit-status").textContent = "";
+  document.getElementById("submit-status").className = "submit-status";
+
+  // Progress bar full
+  document.getElementById("prog-fill").style.width = "100%";
+
+  show("screen-result");
+}
+
+// ─── Submit to Sheets ───
+async function submitResult() {
+  const btn    = document.getElementById("btn-submit");
+  const status = document.getElementById("submit-status");
+  const total  = QUESTIONS.length;
+  const score  = answers.filter(a => a.correct).length;
+
+  btn.disabled = true;
+  btn.textContent = "⏳ Đang gửi…";
+  status.textContent = "";
+  status.className = "submit-status";
+
+  const payload = {
+    name:      studentName,
+    classCode: classCode,
+    score:     score,
+    total:     total,
+    pct:       Math.round((score / total) * 100),
+    quiz:      QUIZ_TITLE,
+    detail:    answers.map((a,i) => ({
+      q:       i + 1,
+      correct: a.correct,
+      chosen:  LABELS[a.chosen]
+    }))
+  };
+
+  try {
+    const res = await fetch(SHEET_URL, {
+      method: "POST",
+      mode:   "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body:   JSON.stringify(payload)
+    });
+    // no-cors → can't read response, assume success
+    status.textContent = "✓ Gửi thành công! Kết quả đã được lưu vào bảng điểm.";
+    status.className   = "submit-status ok";
+    btn.textContent    = "✓ Đã gửi";
+  } catch(e) {
+    status.textContent = "✗ Lỗi kết nối. Kiểm tra Internet và thử lại.";
+    status.className   = "submit-status err";
+    btn.disabled       = false;
+    btn.textContent    = "☁ Gửi kết quả lên bảng điểm";
+  }
+}
+
+// ─── Reset ───
+function resetQuiz() {
+  document.getElementById("inp-name").value  = "";
+  document.getElementById("inp-class").value = "";
+  show("screen-info");
+}
 </script>
 </body>
 </html>
