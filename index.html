@@ -1,528 +1,542 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bài kiểm tra – Trung tâm tiếng Trung </title>
-<style>
-  :root {
-    --blue:    #1a6bcc;
-    --blue-dk: #0f4a99;
-    --blue-lt: #e8f0fb;
-    --green:   #1a9e5c;
-    --red:     #d63031;
-    --gray:    #64748b;
-    --border:  #cbd5e1;
-    --bg:      #f1f5f9;
-    --white:   #ffffff;
-    --radius:  10px;
-    --shadow:  0 4px 18px rgba(0,0,0,.10);
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: var(--bg);
-    color: #1e293b;
-    min-height: 100vh;
-    display: flex; align-items: flex-start; justify-content: center;
-    padding: 28px 12px 48px;
-  }
-  .card {
-    background: var(--white);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    width: 100%; max-width: 640px;
-    padding: 36px 32px;
-  }
-  /* ── Header ── */
-  .header { text-align: center; margin-bottom: 28px; }
-  .header .logo {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: var(--blue); color: #fff;
-    border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 700;
-    letter-spacing: .5px; margin-bottom: 14px;
-  }
-  .header h1 { font-size: 20px; font-weight: 700; color: var(--blue-dk); }
-  .header p  { font-size: 13px; color: var(--gray); margin-top: 4px; }
-
-  /* ── Screens ── */
-  .screen { display: none; }
-  .screen.active { display: block; }
-
-  /* ── Info Form ── */
-  .form-row { margin-bottom: 18px; }
-  .form-row label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #334155; }
-  .form-row input {
-    width: 100%; padding: 10px 14px;
-    border: 1.5px solid var(--border); border-radius: 8px;
-    font-size: 15px; outline: none; transition: border-color .2s;
-  }
-  .form-row input:focus { border-color: var(--blue); }
-  .hint { font-size: 12px; color: var(--gray); margin-top: 5px; }
-  .error-msg { color: var(--red); font-size: 12px; margin-top: 5px; display: none; }
-
-  /* ── Buttons ── */
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 11px 22px; border-radius: 8px; font-size: 14px; font-weight: 600;
-    cursor: pointer; border: none; transition: opacity .15s, transform .1s;
-  }
-  .btn:active { transform: scale(.97); }
-  .btn-primary   { background: var(--blue);  color: #fff; }
-  .btn-primary:hover { opacity: .88; }
-  .btn-success   { background: var(--green); color: #fff; }
-  .btn-outline   { background: transparent; border: 1.5px solid var(--border); color: #475569; }
-  .btn-outline:hover { background: var(--bg); }
-  .btn-full { width: 100%; }
-
-  /* ── Progress bar ── */
-  .progress-wrap { margin-bottom: 20px; }
-  .progress-info { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray); margin-bottom: 6px; }
-  .progress-bar { height: 6px; background: #e2e8f0; border-radius: 99px; }
-  .progress-fill { height: 100%; background: var(--blue); border-radius: 99px; transition: width .35s ease; }
-
-  /* ── Question ── */
-  .question-label { font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
-  .question-text  { font-size: 16px; font-weight: 600; line-height: 1.55; margin-bottom: 20px; }
-
-  .choices { display: flex; flex-direction: column; gap: 10px; }
-  .choice {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 16px; border-radius: 8px;
-    border: 1.5px solid var(--border); cursor: pointer;
-    transition: background .15s, border-color .15s;
-    font-size: 14px;
-  }
-  .choice:hover:not(.locked) { background: var(--blue-lt); border-color: var(--blue); }
-  .choice .badge {
-    width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%;
-    background: #e2e8f0; display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; color: #475569;
-  }
-  .choice.selected { border-color: var(--blue); background: var(--blue-lt); }
-  .choice.selected .badge { background: var(--blue); color: #fff; }
-  .choice.correct { border-color: var(--green); background: #edfbf4; }
-  .choice.correct .badge { background: var(--green); color: #fff; }
-  .choice.wrong   { border-color: var(--red);   background: #fef2f2; }
-  .choice.wrong .badge { background: var(--red); color: #fff; }
-  .choice.locked  { cursor: default; }
-
-  .feedback { margin-top: 14px; padding: 10px 14px; border-radius: 8px; font-size: 13px; display: none; }
-  .feedback.correct { background: #edfbf4; color: #15803d; border: 1px solid #bbf7d0; }
-  .feedback.wrong   { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-
-  .nav-row { display: flex; justify-content: flex-end; margin-top: 22px; }
-
-  /* ── Result screen ── */
-  .score-ring {
-    width: 110px; height: 110px; border-radius: 50%;
-    border: 7px solid var(--blue); display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    margin: 0 auto 18px; background: var(--blue-lt);
-  }
-  .score-ring .big   { font-size: 30px; font-weight: 800; color: var(--blue-dk); }
-  .score-ring .small { font-size: 11px; color: var(--gray); }
-  .result-summary { text-align: center; margin-bottom: 24px; }
-  .result-summary h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-  .result-summary p  { font-size: 13px; color: var(--gray); }
-
-  .result-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 24px; }
-  .result-table th, .result-table td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
-  .result-table th { background: var(--bg); font-weight: 600; }
-  .result-table .c { color: var(--green); font-weight: 700; }
-  .result-table .w { color: var(--red);   font-weight: 700; }
-
-  .submit-status { text-align: center; font-size: 13px; color: var(--gray); margin-top: 14px; min-height: 20px; }
-  .submit-status.ok  { color: var(--green); }
-  .submit-status.err { color: var(--red); }
-
-  /* ── Divider ── */
-  .divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
-
-  @media(max-width:480px){
-    .card { padding: 24px 16px; }
-    .header h1 { font-size: 17px; }
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học viên HSK 1 - Hệ thống Luyện tập & Nộp bài tự động</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Lexend', 'Noto Sans SC', sans-serif;
+        }
+        /* Hiệu ứng lật thẻ 3D */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        .flip-active {
+            transform: rotateY(180deg);
+        }
+    </style>
 </head>
-<body>
-<div class="card">
+<!-- STREAMING_CHUNK: Thiết kế giao diện thân thiện với học sinh HSK -->
+<body class="bg-slate-50 min-h-screen text-slate-800">
 
-  <!-- ═══════════════════════════════════════ -->
-  <!-- SCREEN 1: Nhập thông tin học sinh       -->
-  <!-- ═══════════════════════════════════════ -->
-  <div class="screen active" id="screen-info">
-    <div class="header">
-      <div class="logo">✦ Trung tâm Anh ngữ</div>
-      <h1>Bài kiểm tra trực tuyến</h1>
-      <p>Vui lòng điền thông tin trước khi bắt đầu</p>
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-red-500 to-rose-600 rounded-3xl p-8 shadow-xl text-white mb-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div>
+                    <span class="bg-white/20 text-white font-bold text-xs uppercase px-3 py-1 rounded-full mb-2 inline-block">Học viện Hán Ngữ</span>
+                    <h1 class="text-3xl font-bold tracking-tight mb-2 flex items-center gap-3">
+                        <i class="fa-solid fa-fire-flame-curved"></i> Cổng Luyện Tập HSK 1 Tự Động
+                    </h1>
+                    <p class="text-red-100 text-sm md:text-base">Học viên làm bài tập, hệ thống chấm trắc nghiệm tự động và gửi bài dịch về Google Sheets</p>
+                </div>
+                <!-- Student Info Form Card -->
+                <div class="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 w-full md:w-96">
+                    <h3 class="font-semibold text-lg mb-4 text-white flex items-center gap-2">
+                        <i class="fa-solid fa-user-pen"></i> Thông tin học viên
+                    </h3>
+                    <div class="space-y-3">
+                        <input type="text" id="student-name" placeholder="Nhập họ và tên của bạn..." class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-red-100 focus:outline-none focus:ring-2 focus:ring-white/50 text-sm transition-all">
+                        <input type="text" id="student-class" placeholder="Lớp học (Ví dụ: HSK1-K26)..." class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-red-100 focus:outline-none focus:ring-2 focus:ring-white/50 text-sm transition-all">
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Configuration Panel (Cấp độ & Bài học) -->
+        <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-8">
+            <h2 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-red-500"></i> Lựa chọn bài học luyện tập
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">1. Cấp độ của bạn</label>
+                    <div class="grid grid-cols-1 gap-3">
+                        <button class="w-full py-3 px-4 rounded-xl border-2 font-semibold text-center transition-all bg-red-50 border-red-500 text-red-600">
+                            HSK Cấp Độ 1 (Bài 1 - Bài 15)
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label for="select-lesson" class="block text-sm font-medium text-slate-600 mb-2">2. Chọn bài học (Tự động cập nhật từ Google Sheet)</label>
+                    <select id="select-lesson" onchange="loadLessonData()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium transition-all">
+                        <option value="">Đang kết nối dữ liệu Google Sheet...</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- STREAMING_CHUNK: Không gian làm bài của học sinh -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Cột trái & giữa: Nội dung bài tập -->
+            <div class="lg:col-span-2 space-y-8">
+                
+                <!-- PHẦN 1: LẬT THẺ TỪ VỰNG -->
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <span class="flex items-center justify-center bg-red-100 text-red-600 w-8 h-8 rounded-lg text-sm font-bold">I</span>
+                            Phần 1: Lật Thẻ & Nhận Diện Từ Vựng
+                        </h3>
+                        <span class="text-xs text-slate-400 italic">Nhấp vào thẻ để lật xem nghĩa và cách đọc</span>
+                    </div>
+
+                    <!-- Flashcard Grid -->
+                    <div id="flashcards-container" class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <!-- Dynamic content loaded via JS -->
+                    </div>
+                </div>
+
+                <!-- PHẦN 2: CHỌN ĐÁP ÁN ĐÚNG (MCQ) -->
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-6">
+                        <span class="flex items-center justify-center bg-emerald-100 text-emerald-700 w-8 h-8 rounded-lg text-sm font-bold">II</span>
+                        Phần 2: Trắc Nghiệm Đọc Hiểu & Ngữ Pháp
+                    </h3>
+                    <div id="mcq-container" class="space-y-6">
+                        <!-- Dynamic MCQ generated here -->
+                    </div>
+                </div>
+
+                <!-- PHẦN 3: SẮP XẾP CÂU HOÀN CHỈNH -->
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-6">
+                        <span class="flex items-center justify-center bg-amber-100 text-amber-700 w-8 h-8 rounded-lg text-sm font-bold">III</span>
+                        Phần 3: Sắp Xếp Từ Tạo Thành Câu Có Nghĩa
+                    </h3>
+                    <div id="scramble-container" class="space-y-6">
+                        <!-- Dynamic word scramble generated here -->
+                    </div>
+                </div>
+
+                <!-- PHẦN 4: DỊCH CÂU VÀ VIẾT ĐOẠN (GIÁO VIÊN TỰ CHẤM) -->
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-6">
+                        <span class="flex items-center justify-center bg-violet-100 text-violet-700 w-8 h-8 rounded-lg text-sm font-bold">IV</span>
+                        Phần 4: Viết Đoạn & Dịch Thuật (GV sẽ chấm tay trên Google Sheets)
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <div class="bg-violet-50 rounded-xl p-4 mb-3 border border-violet-100">
+                                <span class="text-xs font-bold text-violet-700 uppercase tracking-wider block mb-1">Đề bài dịch câu:</span>
+                                <p id="translate-sentence-prompt" class="text-lg font-medium text-slate-800">-</p>
+                            </div>
+                            <textarea id="translate-sentence-ans" rows="2" placeholder="Nhập bản dịch tiếng Việt của bạn tại đây..." class="w-full border border-slate-200 rounded-xl p-4 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"></textarea>
+                        </div>
+
+                        <hr class="border-slate-100">
+
+                        <div>
+                            <div class="bg-violet-50 rounded-xl p-4 mb-3 border border-violet-100">
+                                <span class="text-xs font-bold text-violet-700 uppercase tracking-wider block mb-1">Đề bài dịch / viết đoạn văn:</span>
+                                <p id="translate-paragraph-prompt" class="text-lg font-medium text-slate-800 leading-relaxed">-</p>
+                            </div>
+                            <textarea id="translate-paragraph-ans" rows="4" placeholder="Nhập bài dịch hoặc bài viết đoạn của bạn tại đây..." class="w-full border border-slate-200 rounded-xl p-4 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- STREAMING_CHUNK: Trạng thái nộp bài của học sinh (Cột Phải) -->
+            <div class="lg:col-span-1">
+                <div class="sticky top-8 space-y-6">
+                    <!-- Trạng thái tự động -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+                        <h3 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2 pb-3 border-b border-slate-100">
+                            <i class="fa-solid fa-square-poll-vertical text-red-500"></i> Tiến độ & Kết quả tự động
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-xs font-medium text-slate-500 mb-1">
+                                    <span>Từ vựng:</span>
+                                    <span id="score-vocab-label">0/0</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2">
+                                    <div id="progress-vocab" class="bg-red-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-xs font-medium text-slate-500 mb-1">
+                                    <span>Trắc nghiệm MCQ:</span>
+                                    <span id="score-mcq-label">0/0</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2">
+                                    <div id="progress-mcq" class="bg-emerald-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between text-xs font-medium text-slate-500 mb-1">
+                                    <span>Sắp xếp câu:</span>
+                                    <span id="score-scramble-label">0/0</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2">
+                                    <div id="progress-scramble" class="bg-amber-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="mt-6 pt-4 border-t border-slate-100">
+                            <button id="btn-submit" onclick="submitExercisesToSheet()" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-6 rounded-2xl flex items-center justify-center gap-2 shadow-lg hover:shadow-red-200 transition-all duration-300 transform active:scale-95">
+                                <i class="fa-solid fa-paper-plane"></i> Nộp Bài Lên Google Sheet
+                            </button>
+                            <p class="text-[11px] text-center text-slate-400 mt-3">Hệ thống sẽ chuyển toàn bộ bài dịch của bạn về trang tính của Giáo viên.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
     </div>
 
-    <div class="form-row">
-      <label for="inp-name">Họ và tên học sinh <span style="color:var(--red)">*</span></label>
-      <input id="inp-name" type="text" placeholder="VD: Nguyễn Văn A" autocomplete="name">
-      <div class="error-msg" id="err-name">Vui lòng nhập họ tên.</div>
-    </div>
+    <!-- STREAMING_CHUNK: JS Logic kết nối API Google Sheet và xử lý tương tác học viên -->
+    <script>
+        // Copy link Web App Apps Script ở Bước 3 và dán vào đây:
+        const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbw5jJAjbYfpuVn1r8lnD7bzC3FhD2lyr4iJxIxmL3BjVzUY0LsHZODEm5q9MBvoGsk_/exec"; 
 
-    <div class="form-row">
-      <label for="inp-class">Mã lớp <span style="color:var(--red)">*</span></label>
-      <input id="inp-class" type="text" placeholder="VD: SC1-T2" autocomplete="off"
-             style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
-      <div class="hint">Nhận mã lớp từ giáo viên của bạn (VD: SC1-T2, TC1-T6)</div>
-      <div class="error-msg" id="err-class">Vui lòng nhập mã lớp hợp lệ (VD: SC1-T2).</div>
-    </div>
+        // Hệ thống dự phòng offline phòng khi chưa cấu hình xong API
+        let localExerciseDb = {
+            "Bai 1": {
+                lesson_no: 1,
+                lesson_title: "你好 - Hello (Offline)",
+                vocab: [
+                    { hanyu: "你", pinyin: "nǐ", meaning: "Bạn" },
+                    { hanyu: "好", pinyin: "hǎo", meaning: "Tốt / Khỏe" }
+                ],
+                mcq: {
+                    question: "你好吗？",
+                    options: ["A. Bạn khỏe không?", "B. Tạm biệt", "C. Cảm ơn"],
+                    answer: "A"
+                },
+                scramble: {
+                    scrambled: ["吗", "你", "忙", "吗"],
+                    answer: "你忙吗"
+                },
+                translate_sentence: "我不是老师，我是学生。",
+                translate_paragraph: "你好！我叫大卫。我是美国人。很高興認識你。"
+            }
+        };
 
-    <button class="btn btn-primary btn-full" onclick="startQuiz()">Bắt đầu làm bài →</button>
-  </div>
+        let currentLevel = "HSK 1";
+        let activeLessonData = {};
 
-  <!-- ═══════════════════════════════════════ -->
-  <!-- SCREEN 2: Câu hỏi                       -->
-  <!-- ═══════════════════════════════════════ -->
-  <div class="screen" id="screen-quiz">
-    <div class="header" style="margin-bottom:18px">
-      <div class="logo">✦ Trung tâm Anh ngữ</div>
-      <h1 id="quiz-title">Bài kiểm tra</h1>
-      <p id="quiz-student-label" style="color:var(--blue);font-weight:600"></p>
-    </div>
+        // Khởi động trang web
+        window.onload = function() {
+            fetchExercisesFromGoogleSheets();
+        };
 
-    <div class="progress-wrap">
-      <div class="progress-info">
-        <span id="prog-text">Câu 1 / 10</span>
-        <span id="prog-pct">0%</span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
-    </div>
+        // STREAMING_CHUNK: Fetch đồng bộ đề bài HSK trực tiếp từ Google Sheet của bạn
+        async function fetchExercisesFromGoogleSheets() {
+            const selector = document.getElementById('select-lesson');
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_API_URL + "?action=getExercises");
+                if (response.ok) {
+                    const dbFromSheet = await response.json();
+                    if (dbFromSheet && Object.keys(dbFromSheet).length > 0) {
+                        localExerciseDb = dbFromSheet;
+                        console.log("Đã đồng bộ thành công bài tập từ Google Sheets!");
+                    }
+                }
+            } catch (error) {
+                console.warn("Chưa kết nối API hoặc đang dùng database mẫu offline.");
+            }
+            renderLessonSelector();
+            loadLessonData();
+        }
 
-    <div class="question-label" id="q-label">Câu 1</div>
-    <div class="question-text" id="q-text"></div>
-    <div class="choices" id="q-choices"></div>
-    <div class="feedback" id="q-feedback"></div>
+        // Tạo danh sách Selector bài học (Dựa vào số lượng Sheet bạn có trong Excel)
+        function renderLessonSelector() {
+            const selector = document.getElementById('select-lesson');
+            selector.innerHTML = '';
+            
+            const keys = Object.keys(localExerciseDb).sort((a, b) => {
+                return parseInt(a.replace("Bai ", "")) - parseInt(b.replace("Bai ", ""));
+            });
 
-    <div class="nav-row">
-      <button class="btn btn-primary" id="btn-next" onclick="nextQuestion()" disabled>Câu tiếp →</button>
-    </div>
-  </div>
+            keys.forEach(key => {
+                const l = localExerciseDb[key];
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = `Bài ${l.lesson_no}: ${l.lesson_title}`;
+                selector.appendChild(opt);
+            });
+        }
 
-  <!-- ═══════════════════════════════════════ -->
-  <!-- SCREEN 3: Kết quả                       -->
-  <!-- ═══════════════════════════════════════ -->
-  <div class="screen" id="screen-result">
-    <div class="header" style="margin-bottom:20px">
-      <div class="logo">✦ Trung tâm Anh ngữ</div>
-      <h1>Kết quả bài kiểm tra</h1>
-    </div>
+        // Tải dữ liệu của bài học được lựa chọn
+        function loadLessonData() {
+            const selector = document.getElementById('select-lesson');
+            const selectedKey = selector.value || Object.keys(localExerciseDb)[0];
+            activeLessonData = localExerciseDb[selectedKey];
 
-    <div class="result-summary">
-      <div class="score-ring">
-        <div class="big" id="res-score">0</div>
-        <div class="small">/ <span id="res-total">10</span> câu</div>
-      </div>
-      <h2 id="res-grade">–</h2>
-      <p id="res-student"></p>
-    </div>
+            if (!activeLessonData) return;
 
-    <table class="result-table" id="res-table">
-      <thead><tr><th>#</th><th>Câu hỏi</th><th>Kết quả</th></tr></thead>
-      <tbody id="res-tbody"></tbody>
-    </table>
+            // Render Flashcard
+            renderFlashcards(activeLessonData.vocab);
 
-    <button class="btn btn-success btn-full" id="btn-submit" onclick="submitResult()">
-      ☁ Gửi kết quả lên bảng điểm
-    </button>
-    <div class="submit-status" id="submit-status"></div>
+            // Render MCQ
+            renderMCQ(activeLessonData.mcq);
 
-    <hr class="divider">
-    <button class="btn btn-outline btn-full" onclick="resetQuiz()">← Làm lại từ đầu</button>
-  </div>
+            // Render Sắp xếp
+            renderScramble(activeLessonData.scramble);
 
-</div><!-- /card -->
+            // Render Đề bài phần Dịch
+            document.getElementById('translate-sentence-prompt').textContent = activeLessonData.translate_sentence;
+            document.getElementById('translate-paragraph-prompt').textContent = activeLessonData.translate_paragraph;
+            
+            // Xóa rỗng bài làm cũ của học sinh
+            document.getElementById('translate-sentence-ans').value = '';
+            document.getElementById('translate-paragraph-ans').value = '';
 
-<script>
-// ═══════════════════════════════════════════════════════════════
-// CẤU HÌNH — chỉ chỉnh 2 dòng này
-// ═══════════════════════════════════════════════════════════════
-const SHEET_URL = "https://script.google.com/macros/s/https://script.google.com/macros/s/AKfycbyW_4VL3cs8aF7wo2PEha49VeqxLnxxNYTTa9QoIvqAE5RnnvYRHMZoyQTbiSSUgCBe/exec/exec";
-const QUIZ_TITLE = "Kiểm tra từ vựng – Unit 1";
+            // Cập nhật thanh tiến độ
+            mcqPoints = 0;
+            scramblePoints = 0;
+            updateProgress();
+        }
 
-// ═══════════════════════════════════════════════════════════════
-// DỮ LIỆU CÂU HỎI — thêm/sửa tại đây
-// ═══════════════════════════════════════════════════════════════
-const QUESTIONS = [
-  {
-    q: "Choose the correct meaning of 'abundant'.",
-    choices: ["Rare and expensive", "Available in large quantities", "Difficult to find", "Very small in size"],
-    correct: 1
-  },
-  {
-    q: "Which word is a synonym of 'happy'?",
-    choices: ["Sad", "Angry", "Joyful", "Tired"],
-    correct: 2
-  },
-  {
-    q: "Fill in the blank: 'She ___ to school every day.'",
-    choices: ["go", "goes", "going", "gone"],
-    correct: 1
-  },
-  {
-    q: "What is the past tense of 'run'?",
-    choices: ["Runned", "Ran", "Running", "Runs"],
-    correct: 1
-  },
-  {
-    q: "Choose the correct article: '___ apple a day keeps the doctor away.'",
-    choices: ["A", "An", "The", "No article"],
-    correct: 1
-  },
-  {
-    q: "Which sentence is grammatically correct?",
-    choices: [
-      "He don't like coffee.",
-      "She doesn't likes coffee.",
-      "They doesn't drink coffee.",
-      "We don't drink coffee."
-    ],
-    correct: 3
-  },
-  {
-    q: "What does 'enormous' mean?",
-    choices: ["Very small", "Very fast", "Very large", "Very slow"],
-    correct: 2
-  },
-  {
-    q: "Choose the opposite of 'ancient'.",
-    choices: ["Old", "Modern", "Historical", "Classic"],
-    correct: 1
-  },
-  {
-    q: "Which word best completes: 'The student was ___ with the difficult exam.'",
-    choices: ["thrilled", "delighted", "struggling", "excited"],
-    correct: 2
-  },
-  {
-    q: "Identify the noun in this sentence: 'The quick brown fox jumps over the lazy dog.'",
-    choices: ["Quick", "Jumps", "Fox", "Lazy"],
-    correct: 2
-  }
-];
+        // STREAMING_CHUNK: Tạo hoạt ảnh lật thẻ từ vựng 3D
+        function renderFlashcards(vocabList) {
+            const container = document.getElementById('flashcards-container');
+            container.innerHTML = '';
+            
+            vocabList.forEach((v, index) => {
+                const card = document.createElement('div');
+                card.className = "perspective-1000 w-full h-40 cursor-pointer";
+                card.onclick = function() {
+                    const inner = this.querySelector('.transform-style-3d');
+                    inner.classList.toggle('flip-active');
+                };
 
-// ═══════════════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════════════
-let studentName = "";
-let classCode   = "";
-let current     = 0;
-let answers     = [];   // {chosen, correct: bool}
-let locked      = false;
+                card.innerHTML = `
+                    <div class="transform-style-3d relative w-full h-full transition-all duration-500 ease-out">
+                        <!-- Mặt trước -->
+                        <div class="backface-hidden absolute inset-0 w-full h-full bg-white border border-slate-200 hover:border-red-400 rounded-2xl shadow-sm flex flex-col items-center justify-center p-4 transition-all">
+                            <span class="text-4xl font-bold text-slate-800 mb-2">${v.hanyu}</span>
+                            <span class="text-xs text-slate-400 uppercase tracking-widest">Bấm để xem nghĩa</span>
+                        </div>
+                        <!-- Mặt sau -->
+                        <div class="backface-hidden rotate-y-180 absolute inset-0 w-full h-full bg-red-500 rounded-2xl shadow-lg flex flex-col items-center justify-center p-4 text-white">
+                            <span class="text-xl font-bold mb-1">${v.pinyin}</span>
+                            <span class="text-lg text-red-100 text-center font-medium">${v.meaning}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            
+            document.getElementById('score-vocab-label').textContent = `Đã xem: ${vocabList.length}/${vocabList.length}`;
+            document.getElementById('progress-vocab').style.width = '100%';
+        }
 
-const LABELS = ["A","B","C","D"];
+        // STREAMING_CHUNK: Quản lý trắc nghiệm MCQ
+        function renderMCQ(mcqObj) {
+            const container = document.getElementById('mcq-container');
+            container.innerHTML = '';
 
-// ─── helpers ───
-function show(id) {
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-  window.scrollTo({top:0, behavior:"smooth"});
-}
+            const qDiv = document.createElement('div');
+            qDiv.className = "bg-slate-50 border border-slate-100 rounded-2xl p-6";
+            
+            let optionsHtml = '';
+            mcqObj.options.forEach(opt => {
+                const optLetter = opt.charAt(0);
+                optionsHtml += `
+                    <label class="flex items-center gap-4 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl p-4 cursor-pointer transition-all">
+                        <input type="radio" name="mcq-option" value="${optLetter}" onchange="checkMCQAnswer('${optLetter}', '${mcqObj.answer}')" class="w-5 h-5 text-red-600 focus:ring-red-500">
+                        <span class="text-base font-medium text-slate-800">${opt}</span>
+                    </label>
+                `;
+            });
 
-// ─── Screen 1: Start ───
-function startQuiz() {
-  const name  = document.getElementById("inp-name").value.trim();
-  const code  = document.getElementById("inp-class").value.trim().toUpperCase();
-  const errN  = document.getElementById("err-name");
-  const errC  = document.getElementById("err-class");
-  let ok = true;
+            qDiv.innerHTML = `
+                <p class="text-xl font-bold text-slate-900 mb-4">${mcqObj.question}</p>
+                <div class="grid grid-cols-1 gap-3">
+                    ${optionsHtml}
+                </div>
+                <div id="mcq-feedback" class="mt-4 hidden font-semibold text-sm"></div>
+            `;
+            container.appendChild(qDiv);
+        }
 
-  errN.style.display = "none";
-  errC.style.display = "none";
+        let mcqPoints = 0;
+        function checkMCQAnswer(selected, correct) {
+            const feedback = document.getElementById('mcq-feedback');
+            feedback.classList.remove('hidden');
+            if (selected === correct) {
+                feedback.innerHTML = '<span class="text-emerald-600"><i class="fa-solid fa-circle-check"></i> Bạn đã chọn chính xác!</span>';
+                mcqPoints = 1;
+            } else {
+                feedback.innerHTML = `<span class="text-red-600"><i class="fa-solid fa-circle-xmark"></i> Chưa đúng rồi! Hãy thử suy nghĩ lại.</span>`;
+                mcqPoints = 0;
+            }
+            updateProgress();
+        }
 
-  if (!name) { errN.style.display = "block"; ok = false; }
+        // STREAMING_CHUNK: Quản lý trò chơi Sắp xếp câu
+        let studentArrangedWords = [];
+        function renderScramble(scrambleObj) {
+            const container = document.getElementById('scramble-container');
+            container.innerHTML = '';
+            studentArrangedWords = [];
 
-  // Validate mã lớp: chữ + số, gạch ngang, ít nhất 3 ký tự
-  if (!code || !/^[A-Z0-9]{2,6}-[A-Z0-9]{1,4}$/.test(code)) {
-    errC.style.display = "block"; ok = false;
-  }
+            const scrambleDiv = document.createElement('div');
+            scrambleDiv.className = "bg-slate-50 border border-slate-100 rounded-2xl p-6";
 
-  if (!ok) return;
+            let badgesHtml = '';
+            scrambleObj.scrambled.forEach((word, idx) => {
+                badgesHtml += `
+                    <button onclick="clickScrambleWord('${word}', ${idx}, this)" class="bg-white border-2 border-slate-200 hover:border-red-400 font-semibold px-4 py-3 rounded-xl shadow-sm hover:shadow text-slate-800 transition-all m-2 transform active:scale-95 text-lg">
+                        ${word}
+                    </button>
+                `;
+            });
 
-  studentName = name;
-  classCode   = code;
-  answers     = [];
-  current     = 0;
+            scrambleDiv.innerHTML = `
+                <p class="text-sm font-medium text-slate-500 mb-3">Chạm vào từng từ dưới đây theo đúng thứ tự cú pháp:</p>
+                <div class="flex flex-wrap items-center justify-center p-4 bg-white border border-dashed border-slate-300 rounded-2xl min-h-16 mb-6 gap-2">
+                    <div id="arranged-sentence-box" class="text-2xl font-bold text-red-600 flex flex-wrap gap-1"></div>
+                </div>
+                
+                <div class="flex flex-wrap justify-center bg-slate-100 p-4 rounded-xl">
+                    ${badgesHtml}
+                </div>
+                <div class="flex gap-3 mt-4">
+                    <button onclick="resetScramble()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-bold py-2 px-4 rounded-xl transition-all">Sắp xếp lại</button>
+                </div>
+                <div id="scramble-feedback" class="mt-4 hidden font-semibold text-sm"></div>
+            `;
+            container.appendChild(scrambleDiv);
+        }
 
-  document.getElementById("quiz-title").textContent = QUIZ_TITLE;
-  document.getElementById("quiz-student-label").textContent =
-    `${studentName}  |  Lớp: ${classCode}`;
+        function clickScrambleWord(word, index, buttonEl) {
+            if (buttonEl.disabled) return;
+            buttonEl.disabled = true;
+            buttonEl.classList.add('opacity-40');
+            
+            studentArrangedWords.push({word, index, el: buttonEl});
+            
+            const displayBox = document.getElementById('arranged-sentence-box');
+            displayBox.innerHTML = studentArrangedWords.map(item => item.word).join(" ");
+            
+            checkScrambleAnswer();
+        }
 
-  renderQuestion();
-  show("screen-quiz");
-}
+        function resetScramble() {
+            studentArrangedWords.forEach(item => {
+                item.el.disabled = false;
+                item.el.classList.remove('opacity-40');
+            });
+            studentArrangedWords = [];
+            document.getElementById('arranged-sentence-box').innerHTML = '';
+            const feedback = document.getElementById('scramble-feedback');
+            feedback.classList.add('hidden');
+            scramblePoints = 0;
+            updateProgress();
+        }
 
-// ─── Screen 2: Question ───
-function renderQuestion() {
-  const total = QUESTIONS.length;
-  const idx   = current;
-  const q     = QUESTIONS[idx];
-  locked      = false;
+        let scramblePoints = 0;
+        function checkScrambleAnswer() {
+            const sentence = studentArrangedWords.map(item => item.word).join("").replace(/\s/g, "");
+            const correctSentence = activeLessonData.scramble.answer.replace(/\s/g, "");
+            const feedback = document.getElementById('scramble-feedback');
+            
+            if (sentence.length >= correctSentence.length) {
+                feedback.classList.remove('hidden');
+                if (sentence === correctSentence) {
+                    feedback.innerHTML = '<span class="text-emerald-600"><i class="fa-solid fa-circle-check"></i> Xuất sắc! Sắp xếp câu rất chính xác.</span>';
+                    scramblePoints = 1;
+                } else {
+                    feedback.innerHTML = `<span class="text-red-500"><i class="fa-solid fa-circle-xmark"></i> Sắp xếp chưa chính xác. Nhấn 'Sắp xếp lại' để làm lại.</span>`;
+                    scramblePoints = 0;
+                }
+            }
+            updateProgress();
+        }
 
-  // Progress
-  const pct = Math.round((idx / total) * 100);
-  document.getElementById("prog-text").textContent = `Câu ${idx+1} / ${total}`;
-  document.getElementById("prog-pct").textContent  = `${pct}%`;
-  document.getElementById("prog-fill").style.width = `${pct}%`;
+        // STREAMING_CHUNK: Theo dõi tiến độ thời gian thực
+        function updateProgress() {
+            document.getElementById('score-mcq-label').textContent = `${mcqPoints}/1`;
+            document.getElementById('progress-mcq').style.width = mcqPoints === 1 ? '100%' : '0%';
 
-  document.getElementById("q-label").textContent = `Câu ${idx+1}`;
-  document.getElementById("q-text").textContent  = q.q;
+            document.getElementById('score-scramble-label').textContent = `${scramblePoints}/1`;
+            document.getElementById('progress-scramble').style.width = scramblePoints === 1 ? '100%' : '0%';
+        }
 
-  const fb = document.getElementById("q-feedback");
-  fb.style.display = "none"; fb.className = "feedback";
+        // STREAMING_CHUNK: API POST gửi kết quả học sinh về Google Sheets của GV
+        async function submitExercisesToSheet() {
+            const studentName = document.getElementById('student-name').value.trim();
+            const studentClass = document.getElementById('student-class').value.trim();
 
-  document.getElementById("btn-next").disabled = true;
+            if (!studentName || !studentClass) {
+                alert("Bạn vui lòng điền đầy đủ Họ tên và Lớp học trước khi nộp bài!");
+                return;
+            }
 
-  const choicesEl = document.getElementById("q-choices");
-  choicesEl.innerHTML = "";
-  q.choices.forEach((c, i) => {
-    const div = document.createElement("div");
-    div.className = "choice";
-    div.innerHTML = `<div class="badge">${LABELS[i]}</div><span>${c}</span>`;
-    div.onclick = () => selectChoice(i);
-    choicesEl.appendChild(div);
-  });
+            const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Đang nộp bài...';
 
-  // Update next button label
-  const btn = document.getElementById("btn-next");
-  btn.textContent = (idx === total - 1) ? "Xem kết quả ✓" : "Câu tiếp →";
-}
+            const payload = {
+                action: "submitExercise",
+                student_name: studentName,
+                student_class: studentClass,
+                hsk_level: currentLevel,
+                lesson_no: activeLessonData.lesson_no,
+                lesson_title: activeLessonData.lesson_title,
+                score_mcq: mcqPoints,
+                score_scramble: scramblePoints,
+                unscramble_ans: studentArrangedWords.map(item => item.word).join(""),
+                translate_sentence_ans: document.getElementById('translate-sentence-ans').value.trim(),
+                translate_paragraph_ans: document.getElementById('translate-paragraph-ans').value.trim()
+            };
 
-function selectChoice(chosen) {
-  if (locked) return;
-  locked = true;
-
-  const q       = QUESTIONS[current];
-  const correct = q.correct;
-  const isRight = chosen === correct;
-  const choices = document.querySelectorAll(".choice");
-
-  choices.forEach((el, i) => {
-    el.classList.add("locked");
-    if (i === correct) el.classList.add("correct");
-    if (i === chosen && !isRight) el.classList.add("wrong");
-    if (i === chosen && isRight)  el.classList.add("selected");
-  });
-
-  const fb = document.getElementById("q-feedback");
-  fb.style.display = "block";
-  if (isRight) {
-    fb.className = "feedback correct";
-    fb.textContent = "✓ Chính xác!";
-  } else {
-    fb.className = "feedback wrong";
-    fb.textContent = `✗ Đáp án đúng là: ${LABELS[correct]}. ${q.choices[correct]}`;
-  }
-
-  answers.push({ chosen, correct: isRight });
-  document.getElementById("btn-next").disabled = false;
-}
-
-function nextQuestion() {
-  current++;
-  if (current < QUESTIONS.length) {
-    renderQuestion();
-  } else {
-    showResult();
-  }
-}
-
-// ─── Screen 3: Result ───
-function showResult() {
-  const total  = QUESTIONS.length;
-  const score  = answers.filter(a => a.correct).length;
-  const pct    = Math.round((score / total) * 100);
-
-  document.getElementById("res-score").textContent = score;
-  document.getElementById("res-total").textContent = total;
-  document.getElementById("res-student").textContent =
-    `${studentName}  •  Lớp: ${classCode}`;
-
-  let grade = "";
-  if (pct >= 90) grade = "🏆 Xuất sắc!";
-  else if (pct >= 75) grade = "🌟 Giỏi";
-  else if (pct >= 60) grade = "👍 Khá";
-  else if (pct >= 50) grade = "📝 Trung bình";
-  else grade = "💪 Cần ôn thêm";
-  document.getElementById("res-grade").textContent = grade;
-
-  // Detail table
-  const tbody = document.getElementById("res-tbody");
-  tbody.innerHTML = "";
-  answers.forEach((a, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${i+1}</td>
-      <td style="max-width:260px">${QUESTIONS[i].q}</td>
-      <td class="${a.correct ? "c":"w"}">${a.correct ? "✓ Đúng" : "✗ Sai"}</td>`;
-    tbody.appendChild(tr);
-  });
-
-  document.getElementById("btn-submit").disabled = false;
-  document.getElementById("submit-status").textContent = "";
-  document.getElementById("submit-status").className = "submit-status";
-
-  // Progress bar full
-  document.getElementById("prog-fill").style.width = "100%";
-
-  show("screen-result");
-}
-
-// ─── Submit to Sheets ───
-async function submitResult() {
-  const btn    = document.getElementById("btn-submit");
-  const status = document.getElementById("submit-status");
-  const total  = QUESTIONS.length;
-  const score  = answers.filter(a => a.correct).length;
-
-  btn.disabled = true;
-  btn.textContent = "⏳ Đang gửi…";
-  status.textContent = "";
-  status.className = "submit-status";
-
-  const payload = {
-    name:      studentName,
-    classCode: classCode,
-    score:     score,
-    total:     total,
-    pct:       Math.round((score / total) * 100),
-    quiz:      QUIZ_TITLE,
-    detail:    answers.map((a,i) => ({
-      q:       i + 1,
-      correct: a.correct,
-      chosen:  LABELS[a.chosen]
-    }))
-  };
-
-  try {
-    const res = await fetch(SHEET_URL, {
-      method: "POST",
-      mode:   "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body:   JSON.stringify(payload)
-    });
-    // no-cors → can't read response, assume success
-    status.textContent = "✓ Gửi thành công! Kết quả đã được lưu vào bảng điểm.";
-    status.className   = "submit-status ok";
-    btn.textContent    = "✓ Đã gửi";
-  } catch(e) {
-    status.textContent = "✗ Lỗi kết nối. Kiểm tra Internet và thử lại.";
-    status.className   = "submit-status err";
-    btn.disabled       = false;
-    btn.textContent    = "☁ Gửi kết quả lên bảng điểm";
-  }
-}
-
-// ─── Reset ───
-function resetQuiz() {
-  document.getElementById("inp-name").value  = "";
-  document.getElementById("inp-class").value = "";
-  show("screen-info");
-}
-</script>
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                const resData = await response.json();
+                if (resData.status === "success") {
+                    alert("Hoàn thành! Bài làm của bạn đã được gửi thành công đến Google Sheet của Giáo viên.");
+                    // Xóa bài làm cũ để tránh nộp lặp
+                    document.getElementById('translate-sentence-ans').value = '';
+                    document.getElementById('translate-paragraph-ans').value = '';
+                } else {
+                    alert("Gặp lỗi khi lưu kết quả: " + resData.message);
+                }
+            } catch (err) {
+                console.error("Lỗi gửi dữ liệu", err);
+                alert("Không thể gửi bài. Vui lòng kiểm tra lại cấu hình kết nối ứng dụng Web Google Sheet của bạn!");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Nộp Bài Lên Google Sheet';
+            }
+        }
+    </script>
 </body>
 </html>
+
