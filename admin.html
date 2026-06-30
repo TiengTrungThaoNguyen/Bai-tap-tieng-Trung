@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin – Quản Lý Bài Tập HSK</title>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Be Vietnam Pro', sans-serif; }
+    .zh { font-family: 'Noto Sans SC', sans-serif; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    .fade-up { animation: fadeUp .3s ease-out; }
+    .hero { background: linear-gradient(135deg, #7c2d12 0%, #9a3412 50%, #b45309 100%); }
+    .tab-active { border-bottom: 3px solid #b91c1c; color: #b91c1c; font-weight: 700; }
+    .tab-inactive { border-bottom: 3px solid transparent; color: #6b7280; }
+    .tab-inactive:hover { color: #374151; }
+    input, textarea, select {
+      border: 2px solid #e5e7eb; border-radius: 0.75rem;
+      padding: 0.6rem 0.9rem; width: 100%; outline: none;
+      transition: border-color .15s; font-family: inherit;
+    }
+    input:focus, textarea:focus, select:focus { border-color: #b91c1c; }
+    .btn { padding: 0.55rem 1.2rem; border-radius: 0.75rem; font-weight: 600; transition: all .15s; cursor: pointer; font-size: 0.875rem; }
+    .btn-red { background: #b91c1c; color: white; }
+    .btn-red:hover { background: #991b1b; }
+    .btn-gray { background: #f3f4f6; color: #374151; }
+    .btn-gray:hover { background: #e5e7eb; }
+    .btn-green { background: #16a34a; color: white; }
+    .btn-green:hover { background: #15803d; }
+    .btn-amber { background: #d97706; color: white; }
+    .btn-amber:hover { background: #b45309; }
+    .card { background: white; border-radius: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 1.25rem; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-thumb { background: #b91c1c; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+<div id="app" class="min-h-screen">
+
+  <!-- ═══════════════════════ ADMIN LOGIN ═══════════════════════ -->
+  <div v-if="!authed" class="min-h-screen flex items-center justify-center px-4">
+    <div class="w-full max-w-sm fade-up">
+      <div class="text-center mb-8">
+        <div class="zh text-5xl font-bold text-red-700 mb-2">教师</div>
+        <h1 class="text-2xl font-bold text-gray-800">Trang Giáo Viên</h1>
+        <p class="text-gray-400 text-sm mt-1">Quản lý học sinh &amp; bài tập</p>
+      </div>
+      <div class="card">
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Mật khẩu giáo viên</label>
+        <input v-model="pwd" type="password" placeholder="Nhập mật khẩu..." @keyup.enter="doLogin" class="mb-3">
+        <div v-if="authErr" class="text-red-500 text-sm mb-3">❌ {{ authErr }}</div>
+        <button @click="doLogin" :disabled="loading" class="btn btn-red w-full text-center py-3">
+          <span v-if="loading">Đang xác thực...</span>
+          <span v-else>Đăng nhập →</span>
+        </button>
+        <p class="text-xs text-gray-400 mt-3 text-center">Mật khẩu mặc định: <strong>admin123</strong> (đổi trong Cài đặt)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ MAIN ADMIN UI ═══════════════════════ -->
+  <div v-if="authed" class="min-h-screen">
+    <!-- Header -->
+    <div class="hero py-4 px-4">
+      <div class="max-w-5xl mx-auto flex items-center justify-between">
+        <div>
+          <h1 class="text-white font-bold text-xl">📋 Trang Giáo Viên</h1>
+          <p class="text-amber-200 text-xs">Quản lý bài tập tiếng Trung HSK</p>
+        </div>
+        <div class="flex gap-2">
+          <a href="index.html" target="_blank"
+            class="text-xs text-amber-200 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition">
+            👁 Xem trang học sinh
+          </a>
+          <button @click="authed=false;pwd=''" class="text-xs text-amber-200 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition">
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bg-white border-b border-gray-100 sticky top-0 z-10">
+      <div class="max-w-5xl mx-auto flex px-4">
+        <button v-for="t in tabs" :key="t.id" @click="tab=t.id"
+          :class="['px-5 py-4 text-sm transition', tab===t.id ? 'tab-active' : 'tab-inactive']">
+          {{ t.label }}
+        </button>
+      </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-4 py-6">
+
+      <!-- ════════ TAB: HỌC SINH ════════ -->
+      <div v-if="tab==='students'" class="fade-up">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="text-xl font-bold text-gray-800">Danh sách học sinh</h2>
+          <div class="flex gap-2">
+            <input v-model="studentFilter" placeholder="🔍 Tìm theo tên / lớp..." style="width:220px;border-radius:10px;padding:8px 12px">
+          </div>
+        </div>
+
+        <div v-if="loadingStudents" class="text-center py-12 text-gray-400">Đang tải...</div>
+
+        <div v-else-if="filteredStudents.length===0" class="text-center py-12 text-gray-400">
+          Chưa có học sinh nào đăng ký.
+        </div>
+
+        <!-- Student list -->
+        <div v-else class="space-y-3">
+          <div v-for="s in filteredStudents" :key="s.id" class="card">
+            <div class="flex items-start gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="font-bold text-gray-800">{{ s.name }}</h3>
+                  <span class="badge bg-gray-100 text-gray-600">{{ s.classCode }}</span>
+                  <span v-if="s.approved" class="badge bg-green-100 text-green-700">✅ Đã duyệt</span>
+                  <span v-else class="badge bg-amber-100 text-amber-700">⏳ Chờ duyệt</span>
+                </div>
+                <p class="text-xs text-gray-400 mt-1">
+                  Đăng ký: {{ s.registeredAt?.toDate?.()?.toLocaleDateString('vi-VN') || '—' }}
+                </p>
+                <!-- HSK level pills -->
+                <div class="flex flex-wrap gap-1.5 mt-3">
+                  <span v-for="lv in hskLevels" :key="lv"
+                    @click="toggleLevel(s, lv)"
+                    :class="['badge cursor-pointer transition select-none',
+                      s.enabledLevels?.includes(lv)
+                        ? 'bg-red-600 text-white hover:bg-red-700'
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200']">
+                    {{ lv }}
+                  </span>
+                </div>
+              </div>
+              <div class="flex flex-col gap-2">
+                <button v-if="!s.approved" @click="approveStudent(s)" class="btn btn-green">✅ Duyệt</button>
+                <button v-else @click="unapproveStudent(s)" class="btn btn-gray">🚫 Hủy duyệt</button>
+                <button @click="deleteStudent(s)" class="btn btn-gray text-red-500">🗑 Xóa</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ TAB: BÀI TẬP ════════ -->
+      <div v-if="tab==='lessons'" class="fade-up">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="text-xl font-bold text-gray-800">Quản lý bài tập</h2>
+          <button @click="openNewLesson" class="btn btn-red">+ Thêm bài mới</button>
+        </div>
+
+        <!-- Lesson list -->
+        <div v-if="!editingLesson" class="space-y-3">
+          <div v-if="loadingLessons" class="text-center py-12 text-gray-400">Đang tải...</div>
+          <div v-else-if="lessons.length===0" class="text-center py-12 text-gray-400">
+            Chưa có bài tập nào. Nhấn "+ Thêm bài mới" để bắt đầu.
+          </div>
+          <div v-for="l in lessons" :key="l.id" class="card">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span class="zh text-red-700 font-bold text-lg">{{ l.number }}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="badge bg-red-100 text-red-700">{{ l.hskLevel }}</span>
+                  <span v-if="l.published" class="badge bg-green-100 text-green-700">✅ Hiển thị</span>
+                  <span v-else class="badge bg-gray-100 text-gray-500">🔒 Ẩn</span>
+                </div>
+                <h3 class="font-bold text-gray-800 mt-0.5">Bài {{ l.number }}: {{ l.title }}</h3>
+                <p class="text-xs text-gray-400">{{ l.exercises?.length || 0 }} hoạt động</p>
+              </div>
+              <div class="flex gap-2 flex-shrink-0">
+                <button @click="editLesson(l)" class="btn btn-amber">✏️ Sửa</button>
+                <button @click="togglePublish(l)" :class="['btn', l.published ? 'btn-gray' : 'btn-green']">
+                  {{ l.published ? '🔒 Ẩn' : '✅ Hiện' }}
+                </button>
+                <button @click="deleteLesson(l)" class="btn btn-gray text-red-500">🗑</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── LESSON EDITOR ─── -->
+        <div v-if="editingLesson" class="fade-up">
+          <div class="flex items-center gap-3 mb-5">
+            <button @click="editingLesson=null" class="btn btn-gray">← Quay lại</button>
+            <h3 class="font-bold text-gray-700 text-lg">{{ editingLesson.id ? 'Chỉnh sửa bài' : 'Tạo bài mới' }}</h3>
+          </div>
+
+          <!-- Lesson metadata -->
+          <div class="card mb-4">
+            <h4 class="font-semibold text-gray-700 mb-3">Thông tin bài học</h4>
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="text-xs font-semibold text-gray-500 mb-1 block">Cấp độ HSK</label>
+                <select v-model="editingLesson.hskLevel">
+                  <option v-for="lv in hskLevels" :key="lv" :value="lv">{{ lv }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-500 mb-1 block">Số bài</label>
+                <input v-model.number="editingLesson.number" type="number" min="1" placeholder="1">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="text-xs font-semibold text-gray-500 mb-1 block">Tên bài học</label>
+              <input v-model="editingLesson.title" placeholder="Ví dụ: Chào hỏi và Giới thiệu bản thân">
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" v-model="editingLesson.published" class="w-4 h-4" style="width:auto;border:none;padding:0">
+              <span class="text-sm text-gray-600">Hiển thị cho học sinh</span>
+            </label>
+          </div>
+
+          <!-- Exercises list -->
+          <div class="space-y-4 mb-4">
+            <div v-for="(ex, ei) in editingLesson.exercises" :key="ei" class="card border-2 border-gray-100">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <span class="badge bg-red-100 text-red-700">{{ ei+1 }}</span>
+                  <span class="font-semibold text-gray-700">{{ exTypeLabel(ex.type) }}</span>
+                </div>
+                <div class="flex gap-1">
+                  <button v-if="ei>0" @click="moveEx(ei,-1)" class="btn btn-gray px-2">↑</button>
+                  <button v-if="ei<editingLesson.exercises.length-1" @click="moveEx(ei,1)" class="btn btn-gray px-2">↓</button>
+                  <button @click="editingLesson.exercises.splice(ei,1)" class="btn btn-gray text-red-500 px-2">🗑</button>
+                </div>
+              </div>
+
+              <!-- ── flashcard editor ── -->
+              <div v-if="ex.type==='flashcard'">
+                <div v-for="(c,ci) in ex.cards" :key="ci" class="flex gap-2 mb-2 items-center">
+                  <input v-model="c.front" placeholder="Chữ Hán 汉字" class="zh flex-1">
+                  <input v-model="c.pinyin" placeholder="Pinyin" class="flex-1" style="font-size:0.85rem">
+                  <input v-model="c.back" placeholder="Nghĩa tiếng Việt" class="flex-1">
+                  <button @click="ex.cards.splice(ci,1)" class="text-red-400 hover:text-red-600 flex-shrink-0 text-lg">×</button>
+                </div>
+                <button @click="ex.cards.push({front:'',pinyin:'',back:''})" class="btn btn-gray mt-1">+ Thêm thẻ</button>
+              </div>
+
+              <!-- ── matching editor ── -->
+              <div v-else-if="ex.type==='matching'">
+                <div v-for="(p,pi) in ex.pairs" :key="pi" class="flex gap-2 mb-2 items-center">
+                  <input v-model="p.left" placeholder="Tiếng Trung 汉字" class="zh flex-1">
+                  <span class="text-gray-400 flex-shrink-0">↔</span>
+                  <input v-model="p.right" placeholder="Nghĩa tiếng Việt" class="flex-1">
+                  <button @click="ex.pairs.splice(pi,1)" class="text-red-400 hover:text-red-600 flex-shrink-0 text-lg">×</button>
+                </div>
+                <button @click="ex.pairs.push({left:'',right:''})" class="btn btn-gray mt-1">+ Thêm cặp</button>
+              </div>
+
+              <!-- ── multiple choice editor ── -->
+              <div v-else-if="ex.type==='multiple_choice'">
+                <div v-for="(q,qi) in ex.questions" :key="qi" class="border border-gray-100 rounded-xl p-3 mb-3">
+                  <div class="flex justify-between items-start mb-2">
+                    <span class="text-xs font-bold text-gray-400">Câu {{ qi+1 }}</span>
+                    <button @click="ex.questions.splice(qi,1)" class="text-red-400 text-sm">🗑 Xóa câu</button>
+                  </div>
+                  <input v-model="q.question" placeholder="Câu hỏi (có thể dùng chữ Hán)" class="zh mb-2">
+                  <input v-model="q.pinyin" placeholder="Pinyin (tùy chọn)" class="mb-2" style="font-size:0.85rem">
+                  <input v-model="q.context" placeholder="Ngữ cảnh / gợi ý (tùy chọn)" class="mb-2" style="font-size:0.85rem">
+                  <div class="grid grid-cols-2 gap-2 mb-2">
+                    <div v-for="(opt,oi) in q.options" :key="oi" class="flex gap-1 items-center">
+                      <span :class="['w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 cursor-pointer',
+                        q.answer===oi ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-green-100']"
+                        @click="q.answer=oi" title="Nhấn để chọn là đáp án đúng">{{ 'ABCD'[oi] }}</span>
+                      <input v-model="q.options[oi]" :placeholder="'Lựa chọn '+('ABCD'[oi])" class="flex-1" style="padding:5px 8px;font-size:0.85rem">
+                    </div>
+                  </div>
+                  <input v-model="q.explanation" placeholder="Giải thích đáp án (tùy chọn)" style="font-size:0.8rem">
+                </div>
+                <button @click="ex.questions.push({question:'',pinyin:'',context:'',options:['','','',''],answer:0,explanation:''})" class="btn btn-gray">+ Thêm câu hỏi</button>
+              </div>
+
+              <!-- ── sentence order editor ── -->
+              <div v-else-if="ex.type==='sentence_order'">
+                <div v-for="(s,si) in ex.sentences" :key="si" class="border border-gray-100 rounded-xl p-3 mb-3">
+                  <div class="flex justify-between mb-2">
+                    <span class="text-xs font-bold text-gray-400">Câu {{ si+1 }}</span>
+                    <button @click="ex.sentences.splice(si,1)" class="text-red-400 text-sm">🗑</button>
+                  </div>
+                  <label class="text-xs text-gray-400 mb-1 block">Đáp án (câu đầy đủ đúng)</label>
+                  <input v-model="s.answer" placeholder="我叫小明，今年十五岁。" class="zh mb-2">
+                  <label class="text-xs text-gray-400 mb-1 block">Các từ/cụm từ (phân cách bằng dấu phẩy)</label>
+                  <input v-model="s.wordsRaw" @change="s.words=s.wordsRaw.split(',').map(w=>w.trim()).filter(Boolean)"
+                    placeholder="我,叫,小明,今年,十五岁" class="zh mb-2">
+                  <input v-model="s.context" placeholder="Gợi ý / ngữ cảnh (tùy chọn)" style="font-size:0.85rem">
+                </div>
+                <button @click="ex.sentences.push({answer:'',words:[],wordsRaw:'',context:''})" class="btn btn-gray">+ Thêm câu</button>
+              </div>
+
+              <!-- ── sentence translate editor ── -->
+              <div v-else-if="ex.type==='sentence_translate'">
+                <div class="mb-2">
+                  <label class="text-xs font-semibold text-gray-500 mb-1 block">Hướng dịch</label>
+                  <select v-model="ex.direction">
+                    <option value="zh_to_vi">Tiếng Trung → Tiếng Việt</option>
+                    <option value="vi_to_zh">Tiếng Việt → Tiếng Trung</option>
+                  </select>
+                </div>
+                <div v-for="(s,si) in ex.sentences" :key="si" class="flex gap-2 mb-2 items-center">
+                  <input v-model="s.source" :placeholder="ex.direction==='zh_to_vi' ? '你好，请问你叫什么名字？' : 'Bạn tên là gì?'" class="zh flex-1">
+                  <input v-model="s.pinyin" placeholder="Pinyin (tùy chọn)" class="flex-1" style="font-size:0.85rem">
+                  <button @click="ex.sentences.splice(si,1)" class="text-red-400 hover:text-red-600 flex-shrink-0 text-lg">×</button>
+                </div>
+                <button @click="ex.sentences.push({source:'',pinyin:''})" class="btn btn-gray">+ Thêm câu</button>
+              </div>
+
+              <!-- ── paragraph write editor ── -->
+              <div v-else-if="ex.type==='paragraph_write'">
+                <label class="text-xs text-gray-400 mb-1 block">Đề bài</label>
+                <textarea v-model="ex.prompt" rows="2" placeholder="Viết một đoạn văn tiếng Trung về chủ đề gia đình (khoảng 80-100 chữ)." class="mb-2"></textarea>
+                <label class="text-xs text-gray-400 mb-1 block">Gợi ý từ vựng (phân cách bằng dấu phẩy)</label>
+                <input v-model="ex.hintsRaw" @change="ex.hints=ex.hintsRaw.split(',').map(h=>h.trim()).filter(Boolean)"
+                  placeholder="家庭,爸爸,妈妈,哥哥,妹妹" class="zh mb-2">
+                <div class="flex gap-2">
+                  <div class="flex-1">
+                    <label class="text-xs text-gray-400 mb-1 block">Số ký tự tối thiểu (0 = không yêu cầu)</label>
+                    <input v-model.number="ex.minChars" type="number" min="0" placeholder="50">
+                  </div>
+                  <div class="flex-1">
+                    <label class="text-xs text-gray-400 mb-1 block">Placeholder trong ô nhập</label>
+                    <input v-model="ex.placeholder" placeholder="Viết bài ở đây...">
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── paragraph translate editor ── -->
+              <div v-else-if="ex.type==='paragraph_translate'">
+                <div class="mb-2">
+                  <label class="text-xs font-semibold text-gray-500 mb-1 block">Hướng dịch</label>
+                  <select v-model="ex.direction">
+                    <option value="zh_to_vi">Tiếng Trung → Tiếng Việt</option>
+                    <option value="vi_to_zh">Tiếng Việt → Tiếng Trung</option>
+                  </select>
+                </div>
+                <label class="text-xs text-gray-400 mb-1 block">Đoạn văn gốc</label>
+                <textarea v-model="ex.source" rows="4" class="zh mb-2"
+                  placeholder="我叫小明，今年十五岁。我的家在北京，家里有爸爸、妈妈和一个妹妹..."></textarea>
+                <label class="text-xs text-gray-400 mb-1 block">Pinyin (tùy chọn)</label>
+                <textarea v-model="ex.pinyin" rows="2" placeholder="Wǒ jiào Xiǎomíng, jīnnián shíwǔ suì..." style="font-size:0.85rem"></textarea>
+              </div>
+
+            </div><!-- /exercise card -->
+          </div><!-- /exercises list -->
+
+          <!-- Add exercise buttons -->
+          <div class="card mb-4">
+            <p class="text-sm font-semibold text-gray-600 mb-3">➕ Thêm hoạt động</p>
+            <div class="flex flex-wrap gap-2">
+              <button v-for="t in exTypes" :key="t.value" @click="addExercise(t.value)" class="btn btn-gray text-sm">
+                {{ t.icon }} {{ t.label }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Save -->
+          <div class="flex gap-3">
+            <button @click="editingLesson=null" class="btn btn-gray flex-1 py-3">Hủy</button>
+            <button @click="saveLesson" :disabled="savingLesson" class="btn btn-red flex-1 py-3">
+              <span v-if="savingLesson">💾 Đang lưu...</span>
+              <span v-else>💾 Lưu bài học</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ TAB: KẾT QUẢ ════════ -->
+      <div v-if="tab==='results'" class="fade-up">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="text-xl font-bold text-gray-800">Kết quả nộp bài</h2>
+          <button @click="loadSubmissions" class="btn btn-gray">🔄 Tải lại</button>
+        </div>
+
+        <div v-if="loadingSubs" class="text-center py-12 text-gray-400">Đang tải...</div>
+        <div v-else-if="submissions.length===0" class="text-center py-12 text-gray-400">
+          Chưa có bài nộp nào.
+        </div>
+        <div v-else class="space-y-3">
+          <div v-for="s in submissions" :key="s.id" class="card">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                  <span class="font-bold text-gray-800">{{ s.studentName }}</span>
+                  <span class="badge bg-gray-100 text-gray-600">{{ s.classCode }}</span>
+                  <span class="badge bg-red-100 text-red-700">{{ s.hskLevel }}</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-1">📖 Bài {{ s.lessonNumber }}: {{ s.lessonTitle }}</p>
+                <p class="text-xs text-gray-400">⏰ {{ s.submittedAt?.toDate?.()?.toLocaleString('vi-VN') || '—' }}</p>
+              </div>
+              <div class="text-right flex-shrink-0">
+                <p :class="['text-2xl font-bold', s.autoScore>=80?'text-green-500':s.autoScore>=50?'text-amber-500':'text-red-500']">
+                  {{ s.autoScore !== null && s.autoScore !== undefined ? s.autoScore+'%' : '—' }}
+                </p>
+                <p class="text-xs text-gray-400">điểm tự động</p>
+              </div>
+            </div>
+            <!-- Expandable details -->
+            <button @click="s._open=!s._open" class="text-xs text-red-600 hover:text-red-800 mt-2 font-medium">
+              {{ s._open ? '▲ Thu gọn' : '▼ Xem chi tiết' }}
+            </button>
+            <div v-if="s._open" class="mt-3 space-y-2">
+              <div v-for="(r,ri) in s.results" :key="ri" class="bg-gray-50 rounded-xl p-3 text-sm">
+                <p class="font-semibold text-gray-700 mb-1">{{ ri+1 }}. {{ exTypeLabel(r.type) }}
+                  <span v-if="r.score!==null" :class="['ml-2 badge', r.score>=80?'bg-green-100 text-green-700':r.score>=50?'bg-amber-100 text-amber-700':'bg-red-100 text-red-700']">
+                    {{ r.score }}%
+                  </span>
+                  <span v-else class="ml-2 badge bg-gray-100 text-gray-500">Chờ chấm</span>
+                </p>
+                <div v-if="r.type==='sentence_translate' && r.answers">
+                  <p v-for="(a,ai) in r.answers" :key="ai" class="text-gray-600 text-xs">→ {{ a || '(Bỏ trống)' }}</p>
+                </div>
+                <div v-else-if="r.type==='paragraph_write' || r.type==='paragraph_translate'">
+                  <p class="text-gray-600 whitespace-pre-wrap text-xs">{{ r.answer || '(Bỏ trống)' }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ TAB: CÀI ĐẶT ════════ -->
+      <div v-if="tab==='settings'" class="fade-up max-w-lg">
+        <h2 class="text-xl font-bold text-gray-800 mb-5">Cài đặt</h2>
+
+        <div class="card mb-4">
+          <h3 class="font-bold text-gray-700 mb-4">🔗 Google Sheets Webhook</h3>
+          <p class="text-sm text-gray-500 mb-3">
+            Dán URL từ Google Apps Script vào đây. Khi học sinh nộp bài, kết quả sẽ tự động ghi vào Google Sheet của bạn.
+          </p>
+          <label class="text-xs font-semibold text-gray-500 mb-1 block">URL Google Apps Script</label>
+          <input v-model="settings.sheetsUrl" placeholder="https://script.google.com/macros/s/..." class="mb-3">
+          <button @click="saveSheetsUrl" :disabled="savingSettings" class="btn btn-red">
+            {{ savingSettings ? 'Đang lưu...' : '💾 Lưu URL' }}
+          </button>
+          <div v-if="settingsSaved" class="text-green-600 text-sm mt-2">✅ Đã lưu!</div>
+        </div>
+
+        <div class="card mb-4">
+          <h3 class="font-bold text-gray-700 mb-4">🔑 Đổi mật khẩu giáo viên</h3>
+          <label class="text-xs font-semibold text-gray-500 mb-1 block">Mật khẩu mới</label>
+          <input v-model="settings.newPwd" type="password" placeholder="Nhập mật khẩu mới..." class="mb-3">
+          <label class="text-xs font-semibold text-gray-500 mb-1 block">Xác nhận mật khẩu</label>
+          <input v-model="settings.confirmPwd" type="password" placeholder="Nhập lại mật khẩu..." class="mb-3">
+          <button @click="changePassword" class="btn btn-red">🔑 Đổi mật khẩu</button>
+          <div v-if="pwdMsg" :class="['text-sm mt-2', pwdMsg.ok ? 'text-green-600' : 'text-red-600']">{{ pwdMsg.text }}</div>
+        </div>
+
+        <div class="card">
+          <h3 class="font-bold text-gray-700 mb-3">📋 Firebase Config</h3>
+          <p class="text-sm text-gray-500 mb-2">Nhớ thêm domain của bạn vào Firebase Firestore Rules và Authentication.</p>
+          <div class="bg-gray-50 rounded-xl p-4 text-xs text-gray-600 space-y-1 font-mono">
+            <p>Project: <strong>{{ fbProjectId }}</strong></p>
+            <p>Firestore rules: cho phép read/write với điều kiện hợp lý</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /tab content -->
+  </div><!-- /main admin -->
+
+</div><!-- /app -->
+
+<!-- ══════════════════════ FIREBASE CONFIG ══════════════════════ -->
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.firestore();
+</script>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      // Auth
+      authed: false,
+      pwd: '',
+      authErr: null,
+      loading: false,
+
+      // Navigation
+      tab: 'students',
+      tabs: [
+        { id: 'students', label: '👥 Học sinh' },
+        { id: 'lessons',  label: '📚 Bài tập' },
+        { id: 'results',  label: '📊 Kết quả' },
+        { id: 'settings', label: '⚙️ Cài đặt' }
+      ],
+
+      // Students
+      students: [],
+      studentFilter: '',
+      loadingStudents: false,
+
+      // Lessons
+      lessons: [],
+      loadingLessons: false,
+      editingLesson: null,
+      savingLesson: false,
+
+      // Submissions
+      submissions: [],
+      loadingSubs: false,
+
+      // Settings
+      settings: { sheetsUrl: '', newPwd: '', confirmPwd: '' },
+      savingSettings: false,
+      settingsSaved: false,
+      pwdMsg: null,
+
+      // Constants
+      hskLevels: ['HSK1','HSK2','HSK3','HSK4','HSK5','HSK6','HSKK'],
+      exTypes: [
+        { value: 'flashcard', label: 'Lật thẻ', icon: '🃏' },
+        { value: 'matching', label: 'Nối từ', icon: '🔗' },
+        { value: 'multiple_choice', label: 'Trắc nghiệm', icon: '📝' },
+        { value: 'sentence_order', label: 'Sắp xếp câu', icon: '🔀' },
+        { value: 'sentence_translate', label: 'Dịch câu', icon: '✏️' },
+        { value: 'paragraph_write', label: 'Viết đoạn văn', icon: '📄' },
+        { value: 'paragraph_translate', label: 'Dịch đoạn văn', icon: '🌐' }
+      ],
+
+      fbProjectId: FIREBASE_CONFIG.projectId
+    };
+  },
+
+  computed: {
+    filteredStudents() {
+      if (!this.studentFilter.trim()) return this.students;
+      const q = this.studentFilter.toLowerCase();
+      return this.students.filter(s => s.name?.toLowerCase().includes(q) || s.classCode?.toLowerCase().includes(q));
+    }
+  },
+
+  methods: {
+    // ── AUTH ──
+    async doLogin() {
+      this.loading = true; this.authErr = null;
+      try {
+        const doc = await db.collection('config').doc('app').get();
+        const storedPwd = doc.data()?.adminPassword || 'admin123';
+        if (this.pwd === storedPwd) {
+          this.authed = true;
+          sessionStorage.setItem('hsk_admin', '1');
+          this.loadAll();
+        } else {
+          this.authErr = 'Mật khẩu không đúng.';
+        }
+      } catch (e) {
+        // If config doesn't exist yet, use default
+        if (this.pwd === 'admin123') {
+          await db.collection('config').doc('app').set({ adminPassword: 'admin123' }, { merge: true });
+          this.authed = true;
+          sessionStorage.setItem('hsk_admin', '1');
+          this.loadAll();
+        } else {
+          this.authErr = 'Lỗi: ' + e.message;
+        }
+      }
+      this.loading = false;
+    },
+
+    loadAll() {
+      this.loadStudents();
+      this.loadLessons();
+      this.loadSubmissions();
+      this.loadSettings();
+    },
+
+    // ── STUDENTS ──
+    async loadStudents() {
+      this.loadingStudents = true;
+      const snap = await db.collection('students').orderBy('registeredAt','desc').limit(200).get();
+      this.students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      this.loadingStudents = false;
+    },
+
+    async approveStudent(s) {
+      await db.collection('students').doc(s.id).update({ approved: true });
+      s.approved = true;
+    },
+
+    async unapproveStudent(s) {
+      await db.collection('students').doc(s.id).update({ approved: false });
+      s.approved = false;
+    },
+
+    async toggleLevel(s, lv) {
+      const levels = s.enabledLevels || [];
+      const idx = levels.indexOf(lv);
+      if (idx >= 0) levels.splice(idx, 1); else levels.push(lv);
+      s.enabledLevels = [...levels];
+      await db.collection('students').doc(s.id).update({ enabledLevels: s.enabledLevels });
+    },
+
+    async deleteStudent(s) {
+      if (!confirm(`Xóa học sinh "${s.name}"? Hành động này không thể hoàn tác.`)) return;
+      await db.collection('students').doc(s.id).delete();
+      this.students = this.students.filter(x => x.id !== s.id);
+    },
+
+    // ── LESSONS ──
+    async loadLessons() {
+      this.loadingLessons = true;
+      const snap = await db.collection('lessons').orderBy('hskLevel').orderBy('number').get();
+      this.lessons = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      this.loadingLessons = false;
+    },
+
+    openNewLesson() {
+      this.editingLesson = {
+        hskLevel: 'HSK1', number: 1, title: '', published: false, exercises: []
+      };
+    },
+
+    editLesson(l) {
+      // Deep clone and ensure wordsRaw/hintsRaw for editors
+      const clone = JSON.parse(JSON.stringify(l));
+      for (const ex of clone.exercises || []) {
+        if (ex.type === 'sentence_order') {
+          for (const s of ex.sentences || []) {
+            s.wordsRaw = (s.words || []).join(',');
+          }
+        }
+        if (ex.type === 'paragraph_write') {
+          ex.hintsRaw = (ex.hints || []).join(',');
+        }
+      }
+      this.editingLesson = clone;
+    },
+
+    addExercise(type) {
+      const defaults = {
+        flashcard: { type: 'flashcard', cards: [{ front: '', pinyin: '', back: '' }] },
+        matching: { type: 'matching', pairs: [{ left: '', right: '' }] },
+        multiple_choice: { type: 'multiple_choice', questions: [{ question: '', pinyin: '', context: '', options: ['','','',''], answer: 0, explanation: '' }] },
+        sentence_order: { type: 'sentence_order', sentences: [{ answer: '', words: [], wordsRaw: '', context: '' }] },
+        sentence_translate: { type: 'sentence_translate', direction: 'zh_to_vi', sentences: [{ source: '', pinyin: '' }] },
+        paragraph_write: { type: 'paragraph_write', prompt: '', hints: [], hintsRaw: '', minChars: 0, placeholder: 'Viết bài ở đây...' },
+        paragraph_translate: { type: 'paragraph_translate', direction: 'zh_to_vi', source: '', pinyin: '' }
+      };
+      this.editingLesson.exercises.push(JSON.parse(JSON.stringify(defaults[type])));
+    },
+
+    moveEx(idx, dir) {
+      const exs = this.editingLesson.exercises;
+      const target = idx + dir;
+      if (target < 0 || target >= exs.length) return;
+      [exs[idx], exs[target]] = [exs[target], exs[idx]];
+    },
+
+    async saveLesson() {
+      if (!this.editingLesson.title.trim()) { alert('Vui lòng nhập tên bài học.'); return; }
+      this.savingLesson = true;
+
+      // Clean up data before saving
+      const data = JSON.parse(JSON.stringify(this.editingLesson));
+      for (const ex of data.exercises || []) {
+        if (ex.type === 'sentence_order') {
+          for (const s of ex.sentences || []) { delete s.wordsRaw; }
+        }
+        if (ex.type === 'paragraph_write') { delete ex.hintsRaw; }
+      }
+      delete data.id;
+
+      try {
+        if (this.editingLesson.id) {
+          await db.collection('lessons').doc(this.editingLesson.id).set(data);
+          const idx = this.lessons.findIndex(l => l.id === this.editingLesson.id);
+          if (idx >= 0) this.lessons[idx] = { id: this.editingLesson.id, ...data };
+        } else {
+          const ref = await db.collection('lessons').add(data);
+          this.lessons.push({ id: ref.id, ...data });
+        }
+        this.editingLesson = null;
+        alert('✅ Đã lưu bài học!');
+      } catch (e) { alert('Lỗi lưu: ' + e.message); }
+      this.savingLesson = false;
+    },
+
+    async togglePublish(l) {
+      await db.collection('lessons').doc(l.id).update({ published: !l.published });
+      l.published = !l.published;
+    },
+
+    async deleteLesson(l) {
+      if (!confirm(`Xóa bài "${l.title}"?`)) return;
+      await db.collection('lessons').doc(l.id).delete();
+      this.lessons = this.lessons.filter(x => x.id !== l.id);
+    },
+
+    // ── SUBMISSIONS ──
+    async loadSubmissions() {
+      this.loadingSubs = true;
+      const snap = await db.collection('submissions').orderBy('submittedAt','desc').limit(100).get();
+      this.submissions = snap.docs.map(d => ({ id: d.id, _open: false, ...d.data() }));
+      this.loadingSubs = false;
+    },
+
+    // ── SETTINGS ──
+    async loadSettings() {
+      const doc = await db.collection('config').doc('app').get();
+      if (doc.exists) {
+        this.settings.sheetsUrl = doc.data()?.sheetsWebhookUrl || '';
+      }
+    },
+
+    async saveSheetsUrl() {
+      this.savingSettings = true; this.settingsSaved = false;
+      await db.collection('config').doc('app').set({ sheetsWebhookUrl: this.settings.sheetsUrl }, { merge: true });
+      this.savingSettings = false; this.settingsSaved = true;
+      setTimeout(() => { this.settingsSaved = false; }, 3000);
+    },
+
+    async changePassword() {
+      this.pwdMsg = null;
+      if (!this.settings.newPwd) { this.pwdMsg = { ok: false, text: 'Vui lòng nhập mật khẩu mới.' }; return; }
+      if (this.settings.newPwd !== this.settings.confirmPwd) { this.pwdMsg = { ok: false, text: 'Mật khẩu xác nhận không khớp.' }; return; }
+      await db.collection('config').doc('app').set({ adminPassword: this.settings.newPwd }, { merge: true });
+      this.settings.newPwd = ''; this.settings.confirmPwd = '';
+      this.pwdMsg = { ok: true, text: '✅ Đã đổi mật khẩu thành công!' };
+    },
+
+    // ── HELPERS ──
+    exTypeLabel(type) {
+      const map = {
+        flashcard: '🃏 Lật thẻ', matching: '🔗 Nối từ', multiple_choice: '📝 Trắc nghiệm',
+        sentence_order: '🔀 Sắp xếp câu', sentence_translate: '✏️ Dịch câu',
+        paragraph_write: '📄 Viết đoạn văn', paragraph_translate: '🌐 Dịch đoạn văn'
+      };
+      return map[type] || type;
+    }
+  },
+
+  mounted() {
+    if (sessionStorage.getItem('hsk_admin') === '1') {
+      this.authed = true;
+      this.loadAll();
+    }
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
