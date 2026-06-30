@@ -1,805 +1,753 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bài Tập Tiếng Trung HSK</title>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Be Vietnam Pro', sans-serif; }
-    .zh { font-family: 'Noto Sans SC', sans-serif; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tiếng Trung Thảo Nguyên — Bài Tập HSK</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#1a1a2e;--gold:#E8C547;--paper:#F5F0E8;--red:#C0392B;
+  --jade:#2C7A4B;--teal:#148F77;--muted:#6b6560;--border:#E0D8CE;
+  --card:#fff;--radius:12px;--shadow:0 2px 16px rgba(0,0,0,.08);--warm:#F7F3EE;
+}
+body{font-family:'Inter',sans-serif;background:var(--warm);color:var(--ink);min-height:100vh;font-size:15px;line-height:1.6}
 
-    /* Flashcard flip */
-    .flip-card { perspective: 1000px; cursor: pointer; }
-    .flip-card-inner { position: relative; width: 100%; height: 200px; transform-style: preserve-3d; transition: transform 0.6s; }
-    .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
-    .flip-card-front, .flip-card-back {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      backface-visibility: hidden; -webkit-backface-visibility: hidden;
-      border-radius: 1rem; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; padding: 2rem;
-    }
-    .flip-card-back { transform: rotateY(180deg); }
+header{background:var(--ink);color:#fff;position:relative;overflow:hidden}
+.header-inner{max-width:900px;margin:0 auto;padding:30px 20px 26px;position:relative;z-index:2}
+.header-watermark{position:absolute;right:-10px;top:-20px;font-family:'Noto Serif SC',serif;font-size:150px;color:rgba(232,197,71,.07);line-height:1;pointer-events:none}
+.header-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;font-weight:600}
+header h1{font-family:'Noto Serif SC',serif;font-size:clamp(22px,5vw,34px);font-weight:700;line-height:1.2;margin-bottom:6px}
+header h1 span{color:var(--gold)}
+header p{color:rgba(255,255,255,.65);font-size:13px}
 
-    /* Animations */
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-    .fade-up { animation: fadeUp 0.35s ease-out; }
-    @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
-    .shake { animation: shake 0.4s ease-in-out; }
-    @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} }
-    .pop { animation: pop 0.25s ease-out; }
+/* SETUP SCREEN */
+#setup-screen{max-width:560px;margin:0 auto;padding:30px 16px 60px}
+.setup-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:16px}
+.setup-card h2{font-family:'Noto Serif SC',serif;font-size:17px;margin-bottom:14px;color:var(--ink)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.field input,.field select{
+  width:100%;border:2px solid var(--border);border-radius:8px;padding:10px 14px;
+  font-size:15px;font-family:'Inter',sans-serif;color:var(--ink);outline:none;transition:border-color .2s;background:#fff
+}
+.field input:focus,.field select:focus{border-color:var(--gold)}
+.level-pick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.level-pick .level-btn:nth-child(4),.level-pick .level-btn:nth-child(5){grid-column:span 1}
+@media(min-width:420px){.level-pick{grid-template-columns:repeat(5,1fr)}}
+.level-btn{border:2px solid var(--border);border-radius:10px;padding:14px 8px;text-align:center;cursor:pointer;transition:all .15s;background:#fff}
+.level-btn:hover{border-color:var(--gold)}
+.level-btn.active{border-color:var(--red);background:var(--red);color:#fff}
+.level-btn .lv-num{font-family:'Noto Serif SC',serif;font-size:20px;font-weight:700;display:block}
+.level-btn .lv-label{font-size:10px;color:var(--muted)}
+.level-btn.active .lv-label{color:rgba(255,255,255,.8)}
+.btn-start{width:100%;background:var(--ink);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;transition:background .15s}
+.btn-start:hover{background:#2d2d44}
+.btn-start:disabled{opacity:.4;cursor:not-allowed}
+.loading-msg{text-align:center;padding:40px 20px;color:var(--muted)}
+.error-msg{background:#fff5f5;border:1.5px solid var(--red);border-radius:8px;padding:14px;color:var(--red);font-size:13px;margin-top:10px;display:none}
 
-    /* Word chips */
-    .chip {
-      display: inline-flex; align-items: center; padding: 6px 14px;
-      margin: 4px; border-radius: 20px; cursor: pointer;
-      font-family: 'Noto Sans SC', sans-serif; font-size: 1.05rem;
-      transition: all 0.15s; user-select: none; border: 2px solid transparent;
-    }
-    .chip:hover { transform: translateY(-2px); }
-    .chip:active { transform: scale(0.96); }
+/* MAIN */
+main{max-width:900px;margin:0 auto;padding:24px 16px 60px;display:none}
+.section-title{font-family:'Noto Serif SC',serif;font-size:17px;font-weight:700;color:var(--ink);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.student-pill{background:var(--gold);border-radius:10px;padding:10px 16px;margin-bottom:18px;font-size:13px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.student-pill b{color:var(--ink)}
+.change-btn{background:rgba(0,0,0,.1);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--ink)}
 
-    /* Progress */
-    .prog-bar { height: 5px; background: rgba(255,255,255,.25); border-radius: 3px; overflow: hidden; }
-    .prog-fill { height: 100%; background: white; border-radius: 3px; transition: width .4s ease; }
+.lesson-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:32px}
+.lesson-card{background:var(--card);border:2px solid var(--border);border-radius:var(--radius);padding:14px 10px;cursor:pointer;transition:all .18s;text-align:center;position:relative}
+.lesson-card:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:var(--shadow)}
+.lesson-card.active{border-color:var(--red);background:var(--red);color:#fff}
+.lesson-num{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:700;line-height:1;display:block;margin-bottom:4px}
+.lesson-card.active .lesson-num{color:#fff}
+.lesson-label{font-size:10px;line-height:1.3;color:var(--muted)}
+.lesson-card.active .lesson-label{color:rgba(255,255,255,.8)}
 
-    /* Hero */
-    .hero { background: linear-gradient(135deg, #b91c1c 0%, #991b1b 60%, #7f1d1d 100%); }
+#exercise-area{display:none}
+.lesson-header{background:var(--ink);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;position:relative;overflow:hidden;color:#fff}
+.lesson-header-wm{position:absolute;right:10px;top:-8px;font-family:'Noto Serif SC',serif;font-size:80px;opacity:.07;line-height:1}
+.lesson-header h2{font-family:'Noto Serif SC',serif;font-size:20px;margin-bottom:4px}
+.lesson-header p{font-size:13px;color:rgba(255,255,255,.6)}
+.progress-bar{background:rgba(255,255,255,.15);border-radius:4px;height:5px;margin-top:14px}
+.progress-fill{height:100%;border-radius:4px;background:var(--gold);transition:width .4s ease}
 
-    ::-webkit-scrollbar { width: 5px; }
-    ::-webkit-scrollbar-thumb { background: #ef4444; border-radius: 3px; }
+.tabs{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.tab{background:var(--card);border:2px solid var(--border);border-radius:8px;padding:8px 13px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;color:var(--muted);flex-shrink:0}
+.tab:hover{border-color:var(--gold);color:var(--ink)}
+.tab.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.tab.completed{border-color:var(--jade);color:var(--jade)}
+.tab.active.completed{background:var(--jade);border-color:var(--jade);color:#fff}
 
-    /* Match highlight */
-    .match-correct { border-color: #22c55e !important; background: #f0fdf4 !important; color: #16a34a !important; }
-    .match-selected { border-color: #ef4444 !important; background: #fef2f2 !important; }
-    .match-wrong { border-color: #f97316 !important; background: #fff7ed !important; }
-  </style>
+.panel{display:none}
+.panel.active{display:block}
+.exercise-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:12px;box-shadow:var(--shadow)}
+.exercise-card h3{font-size:14px;font-weight:700;color:var(--red);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+.flashcard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.flashcard{border:1.5px solid var(--border);border-radius:10px;padding:14px;background:var(--paper)}
+.fc-hanzi{font-family:'Noto Serif SC',serif;font-size:26px;color:var(--red);text-align:center;margin-bottom:6px}
+.fc-label{font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600;text-transform:uppercase}
+.fc-input{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;background:#fff;outline:none;transition:border-color .2s;font-family:'Inter',sans-serif}
+.fc-input:focus{border-color:var(--gold)}
+.fc-input.correct{border-color:var(--jade);background:#f0faf4}
+.fc-input.wrong{border-color:var(--red);background:#fff5f5}
+
+.match-wrap{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.match-col h4{font-size:11px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;font-weight:700}
+.match-item{border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;cursor:pointer;transition:all .15s;background:#fff;font-size:14px}
+.match-item.hanzi{font-family:'Noto Serif SC',serif;font-size:18px}
+.match-item:hover{border-color:var(--gold)}
+.match-item.selected{border-color:var(--ink);background:var(--ink);color:#fff}
+.match-item.matched{border-color:var(--jade);background:#f0faf4;color:var(--jade);pointer-events:none}
+.match-item.wrong-flash{border-color:var(--red);background:#fff5f5}
+
+.mc-item{margin-bottom:14px}
+.mc-question{font-family:'Noto Serif SC',serif;font-size:20px;color:var(--ink);margin-bottom:4px}
+.mc-pinyin{font-size:12px;color:var(--muted);margin-bottom:10px}
+.mc-options{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mc-opt{border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;cursor:pointer;transition:all .15s;background:#fff;text-align:left}
+.mc-opt:hover{border-color:var(--gold);background:var(--paper)}
+.mc-opt.correct{border-color:var(--jade);background:#f0faf4;color:var(--jade);pointer-events:none}
+.mc-opt.wrong{border-color:var(--red);background:#fff5f5;color:var(--red);pointer-events:none}
+
+.so-words{display:flex;flex-wrap:wrap;gap:6px;min-height:44px;border:2px dashed var(--border);border-radius:8px;padding:8px;margin-bottom:8px;background:var(--paper)}
+.word-chip{background:var(--ink);color:#fff;border-radius:6px;padding:6px 12px;font-size:14px;cursor:pointer;user-select:none;font-family:'Noto Serif SC',serif;transition:opacity .15s}
+.word-chip.in-answer{background:var(--red)}
+.answer-zone{display:flex;flex-wrap:wrap;gap:6px;min-height:44px;border:2px solid var(--gold);border-radius:8px;padding:8px;background:#fffbea}
+.so-feedback{font-size:13px;margin-top:6px;font-weight:600;display:none}
+
+.trans-sentence{font-family:'Noto Serif SC',serif;font-size:18px;color:var(--ink);padding:12px 16px;background:var(--paper);border-radius:8px;margin-bottom:10px}
+.trans-input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;resize:vertical;min-height:54px;outline:none;transition:border-color .2s;background:#fff;font-family:'Inter',sans-serif}
+.trans-input:focus{border-color:var(--gold)}
+.trans-result{font-size:12px;margin-top:6px;font-weight:600;display:none}
+
+.write-card{margin-bottom:16px}
+.write-word{font-family:'Noto Serif SC',serif;font-size:24px;color:var(--purple,#6C3483);background:var(--paper);display:inline-block;padding:8px 18px;border-radius:8px;margin-bottom:6px}
+.write-hint{font-size:12px;color:var(--muted);margin-bottom:8px;font-style:italic}
+.write-input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;font-size:14px;resize:vertical;min-height:70px;outline:none;transition:border-color .2s;background:#fff;font-family:'Inter',sans-serif}
+.write-input:focus{border-color:var(--gold)}
+.write-note{background:#fff8e0;border:1px solid #f0d878;border-radius:8px;padding:10px 14px;font-size:12px;color:#8a6000;margin-top:10px}
+
+.btn{border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-check{background:var(--ink);color:#fff}
+.btn-check:hover{background:#2d2d44}
+.btn-gold{background:var(--gold);color:var(--ink)}
+.btn-gold:hover{background:#d4b340}
+.btn-red{background:var(--red);color:#fff}
+.btn-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center}
+
+.score-display{background:var(--paper);border:1.5px solid var(--border);border-radius:10px;padding:14px 18px;margin-top:14px;display:none}
+.score-display.show{display:flex;align-items:center;gap:14px}
+.score-num{font-family:'Noto Serif SC',serif;font-size:30px;font-weight:700;color:var(--red);line-height:1}
+.score-label{font-size:13px;color:var(--muted)}
+
+.submit-section{background:var(--ink);border-radius:var(--radius);padding:22px 24px;margin-top:24px;color:#fff}
+.submit-section h3{font-family:'Noto Serif SC',serif;font-size:18px;margin-bottom:6px}
+.submit-section p{font-size:13px;color:rgba(255,255,255,.6);margin-bottom:16px}
+.submit-summary{background:rgba(255,255,255,.08);border-radius:10px;padding:14px;margin-bottom:14px;font-size:13px}
+.submit-summary div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.btn-submit{width:100%;background:var(--gold);color:var(--ink);border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s}
+.btn-submit:hover{background:#d4b340}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed}
+
+.toast{position:fixed;bottom:24px;right:20px;left:20px;max-width:380px;margin-left:auto;background:var(--jade);color:#fff;border-radius:10px;padding:12px 18px;font-size:14px;font-weight:600;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.error{background:var(--red)}
+
+footer{text-align:center;padding:24px;font-size:12px;color:var(--muted)}
+
+@media(max-width:580px){
+  .mc-options{grid-template-columns:1fr}
+  .flashcard-grid{grid-template-columns:1fr 1fr}
+  .match-wrap{grid-template-columns:1fr}
+}
+</style>
 </head>
-<body class="bg-slate-50 min-h-screen">
-<div id="app" class="min-h-screen">
+<body>
 
-  <!-- ═══════════════════════════════════ LOGIN ═══════════════════════════════════ -->
-  <div v-if="screen==='login'" class="min-h-screen">
-    <div class="hero py-16 px-4 text-center">
-      <div class="text-6xl mb-3 zh font-bold text-white opacity-90">汉语学习</div>
-      <h1 class="text-white text-3xl font-bold">Bài Tập Tiếng Trung HSK</h1>
-      <p class="text-red-200 mt-2 text-sm">Đăng nhập để bắt đầu luyện tập</p>
+<header>
+  <div class="header-watermark">汉</div>
+  <div class="header-inner">
+    <div class="header-eyebrow">Tiếng Trung Thảo Nguyên</div>
+    <h1>Bài Tập <span>汉语</span> HSK</h1>
+    <p id="header-sub">Chọn trình độ và bài học để bắt đầu luyện tập</p>
+  </div>
+</header>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <h2>👤 Thông tin học sinh</h2>
+    <div class="field">
+      <label>Họ và tên</label>
+      <input type="text" id="inp-name" placeholder="Nguyễn Văn A">
     </div>
-    <div class="max-w-md mx-auto -mt-8 px-4 pb-10">
-      <div class="bg-white rounded-2xl shadow-xl p-8 fade-up">
-        <h2 class="text-xl font-bold text-gray-800 mb-1">Đăng nhập / Đăng ký</h2>
-        <p class="text-xs text-gray-400 mb-6">Lần đầu truy cập sẽ tự động tạo hồ sơ</p>
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-semibold text-gray-600 mb-1">Họ và tên</label>
-            <input v-model="form.name" type="text" placeholder="Ví dụ: Nguyễn Văn An"
-              @keyup.enter="login"
-              class="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:ring-0 focus:border-red-400 outline-none transition text-gray-800">
-          </div>
-          <div>
-            <label class="block text-sm font-semibold text-gray-600 mb-1">Mã lớp</label>
-            <input v-model="form.classCode" type="text" placeholder="Ví dụ: HSK2A, TIENGTRUNG01..."
-              @keyup.enter="login"
-              class="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:ring-0 focus:border-red-400 outline-none transition uppercase text-gray-800">
-          </div>
-          <div v-if="error" class="text-sm text-red-600 bg-red-50 rounded-xl p-3">⚠️ {{ error }}</div>
-          <button @click="login" :disabled="loading"
-            class="w-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold py-3.5 rounded-xl transition disabled:opacity-50 text-base">
-            <span v-if="loading">Đang đăng nhập...</span>
-            <span v-else>Vào học &nbsp;开始学习 →</span>
-          </button>
-        </div>
-        <p class="text-xs text-gray-400 text-center mt-5">Giáo viên sẽ mở quyền truy cập bài tập sau khi đăng ký.</p>
+    <div class="field">
+      <label>Lớp</label>
+      <input type="text" id="inp-class" placeholder="vd: Lớp A, 6A1...">
+    </div>
+    <div class="field">
+      <label>Trình độ HSK</label>
+      <div class="level-pick" id="level-pick">
+        <div class="level-btn active" data-level="HSK1"><span class="lv-num">HSK1</span><span class="lv-label">Sơ cấp</span></div>
+        <div class="level-btn" data-level="HSK2"><span class="lv-num">HSK2</span><span class="lv-label">Sơ cấp+</span></div>
+        <div class="level-btn" data-level="HSK3"><span class="lv-num">HSK3</span><span class="lv-label">Trung cấp</span></div>
+        <div class="level-btn" data-level="HSK4"><span class="lv-num">HSK4</span><span class="lv-label">Trung cấp+</span></div>
+        <div class="level-btn" data-level="HSK5"><span class="lv-num">HSK5</span><span class="lv-label">Cao cấp</span></div>
       </div>
     </div>
+    <button class="btn-start" id="btn-start" onclick="startSession()">Vào học 开始学习 →</button>
+    <div class="error-msg" id="setup-error"></div>
+  </div>
+</div>
+
+<main id="main-area">
+  <div class="student-pill">
+    <span>👤 <b id="pill-name"></b> · 🏫 <b id="pill-class"></b> · 📘 <b id="pill-level"></b></span>
+    <button class="change-btn" onclick="backToSetup()">Đổi thông tin</button>
   </div>
 
-  <!-- ══════════════════════════════════ DASHBOARD ══════════════════════════════════ -->
-  <div v-if="screen==='dashboard'" class="min-h-screen">
-    <div class="hero py-5 px-4">
-      <div class="max-w-2xl mx-auto flex items-center justify-between">
-        <div>
-          <p class="text-red-200 text-xs">Xin chào,</p>
-          <h1 class="text-white font-bold text-xl">{{ student.name }}</h1>
-          <p class="text-red-300 text-xs mt-0.5">🏷 Lớp: {{ student.classCode }}</p>
+  <div class="section-title">Chọn bài học</div>
+  <div class="lesson-grid" id="lesson-grid"></div>
+
+  <div id="exercise-area">
+    <div class="lesson-header" id="lesson-header">
+      <div class="lesson-header-wm" id="lh-wm"></div>
+      <h2 id="lh-title"></h2>
+      <p id="lh-sub"></p>
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="tabs" id="tabs"></div>
+
+    <div class="panel" id="panel-0">
+      <div class="exercise-card">
+        <h3>🃏 Lật thẻ — Nhìn chữ Hán, viết pinyin và nghĩa</h3>
+        <div class="flashcard-grid" id="fc-grid"></div>
+        <div class="btn-row">
+          <button class="btn btn-check" onclick="checkFlashcards()">Kiểm tra</button>
+          <button class="btn btn-gold" onclick="revealFlashcards()">Xem đáp án</button>
         </div>
-        <button @click="logout" class="text-red-200 hover:text-white text-sm transition px-3 py-2 rounded-lg hover:bg-white/10">
-          Đăng xuất
-        </button>
+        <div class="score-display" id="fc-score"></div>
       </div>
     </div>
 
-    <div class="max-w-2xl mx-auto px-4 py-6">
-      <div v-if="loading" class="text-center py-16">
-        <div class="text-5xl animate-spin inline-block">⏳</div>
-        <p class="text-gray-400 mt-3">Đang tải bài tập...</p>
-      </div>
-
-      <div v-else-if="!student.approved" class="text-center py-16 fade-up">
-        <div class="text-6xl mb-4">🔔</div>
-        <h2 class="text-xl font-bold text-gray-700">Đang chờ phê duyệt</h2>
-        <p class="text-gray-500 mt-2 text-sm">Giáo viên sẽ duyệt hồ sơ và mở bài tập cho bạn sớm nhé!</p>
-        <button @click="refreshStudent" class="mt-5 px-6 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition">
-          🔄 Kiểm tra lại
-        </button>
-      </div>
-
-      <div v-else-if="lessons.length===0" class="text-center py-16 fade-up">
-        <div class="text-6xl mb-4">📚</div>
-        <h2 class="text-xl font-bold text-gray-700">Chưa có bài tập</h2>
-        <p class="text-gray-500 mt-2 text-sm">Giáo viên chưa thêm bài tập cho cấp độ của bạn.</p>
-        <button @click="refreshStudent" class="mt-5 px-6 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition">
-          🔄 Tải lại
-        </button>
-      </div>
-
-      <div v-else class="space-y-7 fade-up">
-        <div v-for="(group, level) in lessonsByLevel" :key="level">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full">{{ level }}</span>
-            <div class="h-px flex-1 bg-gray-200"></div>
-          </div>
-          <div class="space-y-2.5">
-            <div v-for="lesson in group" :key="lesson.id"
-              @click="startLesson(lesson)"
-              class="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition cursor-pointer border-2 border-transparent hover:border-red-200 active:scale-[0.99]">
-              <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
-                  <span v-if="doneIds.includes(lesson.id)" class="text-2xl">✅</span>
-                  <span v-else class="zh text-red-700 font-bold text-lg">{{ lesson.number }}</span>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-xs text-red-500 font-semibold">Bài {{ lesson.number }}</p>
-                  <h3 class="font-bold text-gray-800 truncate">{{ lesson.title }}</h3>
-                  <p class="text-xs text-gray-400 mt-0.5">{{ lesson.exercises?.length || 0 }} hoạt động</p>
-                </div>
-                <div class="text-gray-300 text-xl">›</div>
-              </div>
-            </div>
-          </div>
+    <div class="panel" id="panel-1">
+      <div class="exercise-card">
+        <h3>🔗 Nối từ — Nhấn 1 chữ Hán rồi nhấn nghĩa tương ứng</h3>
+        <div class="match-wrap">
+          <div class="match-col"><h4>Chữ Hán</h4><div id="match-left"></div></div>
+          <div class="match-col"><h4>Nghĩa tiếng Việt</h4><div id="match-right"></div></div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════ EXERCISE ══════════════════════════════════ -->
-  <div v-if="screen==='exercise'" class="min-h-screen pb-24">
-    <!-- Header -->
-    <div class="hero py-4 px-4 sticky top-0 z-10">
-      <div class="max-w-2xl mx-auto">
-        <div class="flex items-center gap-3 mb-2">
-          <button @click="exitLesson" class="text-red-200 hover:text-white transition text-xl font-bold">←</button>
-          <div class="flex-1 min-w-0">
-            <p class="text-red-300 text-xs">{{ lesson?.hskLevel }} · Bài {{ lesson?.number }}</p>
-            <h2 class="text-white font-bold truncate">{{ lesson?.title }}</h2>
-          </div>
-          <span class="text-red-200 text-sm font-medium">{{ exIdx+1 }}/{{ lesson?.exercises?.length }}</span>
-        </div>
-        <div class="prog-bar"><div class="prog-fill" :style="{width: progPct+'%'}"></div></div>
+        <div class="score-display" id="match-score"></div>
       </div>
     </div>
 
-    <div class="max-w-2xl mx-auto px-4 py-6">
-
-      <!-- ─── FLASHCARD ─── -->
-      <div v-if="ex?.type==='flashcard'" class="fade-up">
-        <h3 class="font-bold text-gray-700 mb-1 text-lg">🃏 Học từ vựng</h3>
-        <p class="text-xs text-gray-400 mb-4">Nhấn vào thẻ để xem nghĩa · {{ fc.idx+1 }}/{{ ex.cards.length }}</p>
-
-        <div class="flip-card w-full max-w-sm mx-auto" :class="{flipped: fc.flipped}" @click="fc.flipped=!fc.flipped">
-          <div class="flip-card-inner">
-            <div class="flip-card-front bg-red-600 shadow-lg">
-              <p class="zh text-6xl font-bold text-white">{{ ex.cards[fc.idx]?.front }}</p>
-            </div>
-            <div class="flip-card-back bg-white border-2 border-red-100 shadow-lg">
-              <p class="text-gray-400 text-sm mb-1">{{ ex.cards[fc.idx]?.pinyin }}</p>
-              <p class="zh text-4xl font-bold text-red-700 mb-2">{{ ex.cards[fc.idx]?.front }}</p>
-              <p class="text-gray-700 text-xl font-semibold text-center">{{ ex.cards[fc.idx]?.back }}</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex justify-center gap-4 mt-6">
-          <button @click="fcPrev" :disabled="fc.idx===0"
-            class="px-7 py-3 bg-gray-100 text-gray-600 rounded-xl font-semibold disabled:opacity-30 hover:bg-gray-200 transition">← Trước</button>
-          <button v-if="fc.idx < ex.cards.length-1" @click="fcNext"
-            class="px-7 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition">Tiếp →</button>
-          <button v-else @click="doneEx({type:'flashcard',score:100})"
-            class="px-7 py-3 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 transition">✅ Xong!</button>
-        </div>
+    <div class="panel" id="panel-2">
+      <div class="exercise-card">
+        <h3>✅ Trắc nghiệm — Chọn nghĩa đúng</h3>
+        <div id="mc-container"></div>
+        <div class="btn-row"><button class="btn btn-check" onclick="checkMC()">Kiểm tra</button></div>
+        <div class="score-display" id="mc-score"></div>
       </div>
+    </div>
 
-      <!-- ─── MATCHING ─── -->
-      <div v-else-if="ex?.type==='matching'" class="fade-up">
-        <h3 class="font-bold text-gray-700 mb-1 text-lg">🔗 Nối từ</h3>
-        <p class="text-xs text-gray-400 mb-4">Chọn từ tiếng Trung → chọn nghĩa tương ứng · {{ mt.done }}/{{ ex.pairs.length }} cặp</p>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div class="space-y-2">
-            <p class="text-xs font-bold text-gray-400 uppercase text-center mb-1">Tiếng Trung</p>
-            <template v-for="(p,i) in ex.pairs" :key="'ml'+i">
-              <div v-if="mt.matchedL.includes(i)"
-                class="p-3 rounded-xl border-2 text-center zh text-lg font-bold match-correct opacity-60 line-through decoration-green-400">
-                {{ p.left }}
-              </div>
-              <button v-else @click="mtSelL(i)" :class="['w-full p-3 rounded-xl border-2 text-center zh text-lg font-bold transition',
-                mt.selL===i ? 'match-selected' : mt.wrongPair?.l===i ? 'match-wrong shake' : 'border-gray-200 bg-white hover:border-red-300']">
-                {{ p.left }}
-              </button>
-            </template>
-          </div>
-          <div class="space-y-2">
-            <p class="text-xs font-bold text-gray-400 uppercase text-center mb-1">Nghĩa</p>
-            <template v-for="(p,i) in mt.shuffled" :key="'mr'+i">
-              <div v-if="mt.matchedR.includes(i)"
-                class="p-3 rounded-xl border-2 text-center text-sm font-medium match-correct opacity-60 line-through decoration-green-400">
-                {{ p.right }}
-              </div>
-              <button v-else @click="mtSelR(i)" :class="['w-full p-3 rounded-xl border-2 text-center text-sm font-medium transition',
-                mt.selR===i ? 'match-selected' : mt.wrongPair?.r===i ? 'match-wrong shake' : 'border-gray-200 bg-white hover:border-red-300']">
-                {{ p.right }}
-              </button>
-            </template>
-          </div>
+    <div class="panel" id="panel-3">
+      <div class="exercise-card">
+        <h3>🔀 Sắp xếp câu — Nhấn từ để xếp đúng thứ tự</h3>
+        <div id="so-container"></div>
+        <div class="btn-row">
+          <button class="btn btn-check" onclick="checkSO()">Kiểm tra</button>
+          <button class="btn btn-gold" onclick="resetSO()">Làm lại</button>
         </div>
-
-        <div v-if="mt.done===ex.pairs.length" class="mt-6 text-center fade-up">
-          <button @click="doneEx({type:'matching',score:Math.round(mt.correct/ex.pairs.length*100)})"
-            class="px-8 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition">✅ Hoàn thành! Tiếp theo</button>
-        </div>
+        <div class="score-display" id="so-score"></div>
       </div>
+    </div>
 
-      <!-- ─── MULTIPLE CHOICE ─── -->
-      <div v-else-if="ex?.type==='multiple_choice'" class="fade-up">
-        <h3 class="font-bold text-gray-700 mb-1 text-lg">📝 Trắc nghiệm</h3>
-        <p class="text-xs text-gray-400 mb-4">Câu {{ mc.qi+1 }}/{{ ex.questions.length }}</p>
-
-        <div class="bg-white rounded-2xl p-6 shadow-sm mb-5 text-center">
-          <p class="zh text-2xl font-bold text-gray-800">{{ ex.questions[mc.qi]?.question }}</p>
-          <p v-if="ex.questions[mc.qi]?.pinyin" class="text-sm text-gray-400 mt-1">{{ ex.questions[mc.qi].pinyin }}</p>
-          <p v-if="ex.questions[mc.qi]?.context" class="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-1.5 mt-3 inline-block">{{ ex.questions[mc.qi].context }}</p>
-        </div>
-
-        <div class="space-y-2.5">
-          <button v-for="(opt,oi) in ex.questions[mc.qi]?.options" :key="oi"
-            @click="mcPick(oi)" :disabled="mc.ans[mc.qi]!==undefined"
-            :class="['w-full p-4 rounded-xl border-2 text-left font-medium transition flex items-center gap-3', mcOptClass(oi)]">
-            <span :class="['w-7 h-7 flex-shrink-0 rounded-full border-2 flex items-center justify-center text-xs font-bold', mcBadgeClass(oi)]">{{ 'ABCD'[oi] }}</span>
-            <span>{{ opt }}</span>
-          </button>
-        </div>
-
-        <div v-if="mc.ans[mc.qi]!==undefined && ex.questions[mc.qi]?.explanation"
-          class="mt-4 bg-blue-50 rounded-xl p-4 text-sm text-blue-700">
-          💡 {{ ex.questions[mc.qi].explanation }}
-        </div>
-
-        <div v-if="mc.ans[mc.qi]!==undefined" class="mt-4 text-right">
-          <button v-if="mc.qi < ex.questions.length-1" @click="mc.qi++"
-            class="px-7 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition">Câu tiếp →</button>
-          <button v-else @click="mcDone"
-            class="px-7 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition">✅ Xong!</button>
-        </div>
+    <div class="panel" id="panel-4">
+      <div class="exercise-card">
+        <h3>🌐 Dịch câu — Dịch sang tiếng Việt</h3>
+        <div id="ts-container"></div>
+        <div class="btn-row"><button class="btn btn-check" onclick="checkTS()">Kiểm tra</button></div>
+        <div class="score-display" id="ts-score"></div>
       </div>
+    </div>
 
-      <!-- ─── SENTENCE ORDER ─── -->
-      <div v-else-if="ex?.type==='sentence_order'" class="fade-up">
-        <h3 class="font-bold text-gray-700 mb-1 text-lg">🔀 Sắp xếp câu</h3>
-        <p class="text-xs text-gray-400 mb-4">Câu {{ so.idx+1 }}/{{ ex.sentences.length }} · Nhấn từ để xếp</p>
-
-        <div v-if="ex.sentences[so.idx]?.context" class="bg-amber-50 rounded-xl p-3 mb-3 text-sm text-amber-700">
-          {{ ex.sentences[so.idx].context }}
-        </div>
-
-        <div :class="['bg-white rounded-xl border-2 min-h-14 p-3 mb-3 flex flex-wrap items-center transition',
-          so.result===null ? 'border-gray-200' : so.result ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50']">
-          <span v-if="!so.sel.length" class="text-gray-300 text-sm">Nhấn các từ bên dưới để xếp câu...</span>
-          <span v-for="(w,wi) in so.sel" :key="'s'+wi" @click="soRemove(wi)"
-            class="chip bg-red-100 text-red-700 hover:bg-red-200 border-red-200">{{ w }}</span>
-        </div>
-
-        <div class="bg-slate-100 rounded-xl p-3 mb-4 flex flex-wrap min-h-14 items-center">
-          <span v-for="(w,wi) in so.avail" :key="'a'+wi" @click="soAdd(wi)"
-            class="chip bg-white border-gray-200 text-gray-700 hover:bg-red-50 hover:border-red-300 shadow-sm">{{ w }}</span>
-        </div>
-
-        <div v-if="so.result!==null" :class="['rounded-xl p-3 mb-3 text-sm', so.result ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700']">
-          <span v-if="so.result">✅ Chính xác!</span>
-          <span v-else>❌ Chưa đúng &nbsp;·&nbsp; Đáp án: <strong class="zh">{{ ex.sentences[so.idx]?.answer }}</strong></span>
-        </div>
-
-        <div class="flex gap-2">
-          <button @click="soClear" class="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-semibold hover:bg-gray-200 transition">🔄 Làm lại</button>
-          <button v-if="so.result===null" @click="soCheck" :disabled="!so.sel.length"
-            class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 disabled:opacity-40 transition">Kiểm tra ✓</button>
-          <button v-else-if="so.idx < ex.sentences.length-1" @click="soNext"
-            class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition">Câu tiếp →</button>
-          <button v-else @click="soDone"
-            class="flex-1 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition">✅ Xong!</button>
-        </div>
+    <div class="panel" id="panel-5">
+      <div class="exercise-card">
+        <h3>✍️ Đặt câu với từ cho sẵn</h3>
+        <div id="write-container"></div>
+        <div class="write-note">📝 Phần này là tự luận — giáo viên sẽ chấm và nhận xét trực tiếp trên hệ thống sau khi em nộp bài.</div>
+        <div class="btn-row"><button class="btn btn-check" onclick="markWritingDone()">Hoàn thành phần này</button></div>
       </div>
+    </div>
 
-      <!-- ─── SENTENCE TRANSLATE ─── -->
-      <div v-else-if="ex?.type==='sentence_translate'" class="fade-up">
-        <h3 class="font-bold text-gray-700 mb-1 text-lg">✏️ Dịch câu</h3>
-        <p class="text-xs text-gray-400 mb-4">Câu {{ st.idx+1 }}/{{ ex.sentences.length }}</p>
-
-        <div class="bg-red-600 rounded-2xl p-6 mb-4 text-center">
-          <p class="zh text-2xl font-bold text-white leading-relaxed">{{ ex.sentences[st.idx]?.source }}</p>
-          <p v-if="ex.sentences[st.idx]?.pinyin" class="text-red-200 text-sm mt-2">{{ ex.sentences[st.idx].pinyin }}</p>
-        </div>
-
-        <textarea v-model="st.ans[st.idx]"
-          :placeholder="ex.direction==='vi_to_zh' ? 'Nhập bản dịch tiếng Trung...' : 'Nhập bản dịch tiếng Việt...'"
-          rows="3"
-          class="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-red-400 outline-none resize-none transition text-base zh"></textarea>
-
-        <div class="flex gap-3 mt-3">
-          <button v-if="st.idx>0" @click="st.idx--"
-            class="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-semibold hover:bg-gray-200 transition">← Trước</button>
-          <button v-if="st.idx < ex.sentences.length-1" @click="st.idx++"
-            class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition">Câu tiếp →</button>
-          <button v-else @click="doneEx({type:'sentence_translate',answers:Object.values(st.ans),score:null})"
-            class="flex-1 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition">✅ Nộp</button>
-        </div>
-      </div>
-
-      <!-- ─── PARAGRAPH WRITE ─── -->
-      <div v-else-if="ex?.type==='paragraph_write'" class="fade-up">
-        <h3 class="font-bold text-gray-700 mb-1 text-lg">📝 Viết đoạn văn</h3>
-
-        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
-          <p class="text-xs font-bold text-amber-600 mb-1">📌 ĐỀ BÀI</p>
-          <p class="text-amber-800 font-medium">{{ ex.prompt }}</p>
-        </div>
-
-        <div v-if="ex.hints?.length" class="mb-4">
-          <p class="text-xs text-gray-400 mb-2">💡 Gợi ý từ vựng:</p>
-          <div class="flex flex-wrap gap-2">
-            <span v-for="h in ex.hints" :key="h" class="zh bg-red-50 text-red-700 px-3 py-1 rounded-full text-sm border border-red-100">{{ h }}</span>
-          </div>
-        </div>
-
-        <textarea v-model="pw.ans" :placeholder="ex.placeholder || 'Viết bài ở đây...'" rows="8"
-          class="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-red-400 outline-none resize-none transition zh text-lg leading-loose"></textarea>
-
-        <div class="flex items-center justify-between my-2">
-          <span class="text-xs text-gray-400">{{ pw.ans.length }} ký tự</span>
-          <span v-if="ex.minChars" :class="['text-xs font-medium', pw.ans.length>=ex.minChars ? 'text-green-500' : 'text-gray-400']">
-            Tối thiểu {{ ex.minChars }} ký tự
-          </span>
-        </div>
-
-        <button @click="doneEx({type:'paragraph_write',answer:pw.ans,score:null})"
-          class="w-full py-3.5 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition">✅ Nộp bài viết</button>
-      </div>
-
-      <!-- ─── PARAGRAPH TRANSLATE ─── -->
-      <div v-else-if="ex?.type==='paragraph_translate'" class="fade-up">
-        <h3 class="font-bold text-gray-700 mb-1 text-lg">🌐 Dịch đoạn văn</h3>
-
-        <div class="bg-red-50 border border-red-100 rounded-xl p-5 mb-4 leading-loose">
-          <p class="zh text-lg text-red-800 leading-loose">{{ ex.source }}</p>
-          <p v-if="ex.pinyin" class="text-sm text-red-400 mt-2">{{ ex.pinyin }}</p>
-        </div>
-
-        <textarea v-model="pt.ans"
-          :placeholder="ex.direction==='vi_to_zh' ? 'Nhập bản dịch tiếng Trung...' : 'Nhập bản dịch tiếng Việt...'"
-          rows="8"
-          class="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-red-400 outline-none resize-none transition text-base leading-relaxed"></textarea>
-
-        <button @click="doneEx({type:'paragraph_translate',answer:pt.ans,score:null})"
-          class="w-full mt-3 py-3.5 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition">✅ Nộp bản dịch</button>
-      </div>
-
-    </div><!-- /exercise content -->
-
-    <!-- SUBMIT BUTTON (fixed bottom, shows when all done) -->
-    <div v-if="allDone" class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg">
-      <div class="max-w-2xl mx-auto">
-        <button @click="submitLesson" :disabled="submitting"
-          class="w-full py-4 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-bold rounded-2xl transition text-lg shadow-md disabled:opacity-50">
-          <span v-if="submitting">⏳ Đang nộp bài...</span>
-          <span v-else>📤 Nộp bài hoàn thành</span>
-        </button>
-      </div>
+    <div class="submit-section">
+      <h3>📤 Nộp bài</h3>
+      <p>Kết quả sẽ tự động gửi đến giáo viên qua Google Sheets</p>
+      <div class="submit-summary" id="submit-summary"></div>
+      <button class="btn-submit" id="btn-submit" onclick="submitResults()">Nộp bài 提交 →</button>
     </div>
   </div>
+</main>
 
-  <!-- ══════════════════════════════════ SUBMITTED ══════════════════════════════════ -->
-  <div v-if="screen==='submitted'" class="min-h-screen flex flex-col items-center justify-center px-4 fade-up">
-    <div class="text-center max-w-sm w-full">
-      <div class="text-7xl mb-4">🎉</div>
-      <h2 class="text-2xl font-bold text-gray-800">Nộp bài thành công!</h2>
-      <p class="text-gray-500 mt-1 text-sm">Kết quả đã được gửi đến giáo viên</p>
+<footer>Tiếng Trung Thảo Nguyên · Hệ thống bài tập HSK tự động</footer>
+<div class="toast" id="toast"></div>
 
-      <div class="bg-white rounded-2xl shadow-md p-6 mt-6 text-center">
-        <p class="text-xs text-gray-400 mb-1">Điểm tự động (trắc nghiệm, nối từ, sắp xếp)</p>
-        <p class="text-5xl font-bold" :class="autoScore>=80?'text-green-500':autoScore>=50?'text-amber-500':'text-red-500'">
-          {{ autoScore !== null ? autoScore+'%' : '—' }}
-        </p>
-        <p class="text-xs text-gray-400 mt-2">Bài dịch &amp; bài viết sẽ được giáo viên chấm riêng</p>
-      </div>
-
-      <button @click="screen='dashboard'; lesson=null" class="mt-6 px-8 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition">
-        ← Về danh sách bài
-      </button>
-    </div>
-  </div>
-
-</div><!-- /app -->
-
-<!-- ══════════════════════ FIREBASE CONFIG — GIÁO VIÊN ĐIỀN VÀO ĐÂY ══════════════════════ -->
 <script>
-const FIREBASE_CONFIG = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+/* ════════════════════════════════════════════════════════════════
+   ✏️ CẤU HÌNH — MỖI TRÌNH ĐỘ CÓ 1 FILE GOOGLE SHEET RIÊNG
+   → 5 Web App URL khác nhau. Thay từng dòng sau khi deploy Apps Script
+   cho từng file google_sheet_hsk1.xlsx ... google_sheet_hsk5.xlsx
+   ════════════════════════════════════════════════════════════════ */
+const APPS_SCRIPT_URLS = {
+  HSK1: "https://script.google.com/macros/s/AKfycbwp_9mz8QNInL2EsqrGwkVYYNiBIWsjJ05RPud9jhb5JhvjveeNlOBYMIoW-P13C9XP8A/exec",
+  HSK2: "https://script.google.com/macros/s/AKfycbyRVSWK1m1zW0Y2SsveJGF-VgtJEuiRyj2fm0tlpRToWIyOftOjxwEVXwcyJ9aYbu2S/exec",
+  HSK3: "https://script.google.com/macros/s/AKfycbzfagNLJ4bxNfyl92LQm3fgAYhEtCSIerkD1MyI8BfrSORHJFVaYpT38ptyPf6VRypV/exec",
+  HSK4: "https://script.google.com/macros/s/AKfycbzOgEE7YKVmvxwTJogxkRXESAaWqUpUhpF2tZ-n8ItlNFcVtnzBCx_7VqfLUucySxBV/exec",
+  HSK5: "https://script.google.com/macros/s/AKfycbyTNTxhSnreW3V1eub6OsOb3tMCtRbuQVLVNmT0PnscBZ7-Bhoh5uGtYHMSPSTtQr-w/exec",
 };
-firebase.initializeApp(FIREBASE_CONFIG);
-const db = firebase.firestore();
-</script>
 
-<!-- ══════════════════════════════ VUE APP ══════════════════════════════ -->
-<script>
-const { createApp } = Vue;
+/* ─── STATE ─── */
+let selectedLevel = "HSK1";
+let LESSON_DATA = {}; // sau khi fetch: {lessons:[], words:[], matching:[], mc:[], sentence_order:[], translate:[], writing:[]}
+let curLesson = null;
+let panelDone = [false,false,false,false,false,false];
+let scores = {};
+let writingAnswers = [];
+const PANEL_NAMES = ["🃏 Lật thẻ","🔗 Nối từ","✅ Trắc nghiệm","🔀 Sắp câu","🌐 Dịch câu","✍️ Đặt câu"];
 
-createApp({
-  data() {
-    return {
-      screen: 'login',
-      loading: false,
-      submitting: false,
-      error: null,
+/* ─── SETUP ─── */
+document.querySelectorAll('.level-btn').forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll('.level-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedLevel = btn.dataset.level;
+  };
+});
 
-      // Auth
-      student: null,
-      form: { name: '', classCode: '' },
-
-      // Dashboard
-      lessons: [],
-      doneIds: [],
-
-      // Exercise session
-      lesson: null,
-      exIdx: 0,
-      results: [],        // collected results per exercise
-      doneSet: [],        // indices of completed exercises
-
-      // Flashcard state
-      fc: { idx: 0, flipped: false },
-
-      // Matching state
-      mt: { selL: null, selR: null, shuffled: [], matchedL: [], matchedR: [], done: 0, correct: 0, wrongPair: null },
-
-      // Multiple choice state
-      mc: { qi: 0, ans: {} },
-
-      // Sentence order state
-      so: { idx: 0, avail: [], sel: [], result: null, scores: [] },
-
-      // Sentence translate state
-      st: { idx: 0, ans: {} },
-
-      // Paragraph write state
-      pw: { ans: '' },
-
-      // Paragraph translate state
-      pt: { ans: '' },
-
-      // Result
-      autoScore: null
-    };
-  },
-
-  computed: {
-    ex() { return this.lesson?.exercises?.[this.exIdx]; },
-
-    progPct() {
-      const total = this.lesson?.exercises?.length || 1;
-      return Math.round((this.doneSet.length / total) * 100);
-    },
-
-    allDone() {
-      return this.lesson && this.doneSet.length === this.lesson.exercises?.length;
-    },
-
-    lessonsByLevel() {
-      const g = {};
-      for (const l of this.lessons) {
-        const lv = l.hskLevel || 'Khác';
-        if (!g[lv]) g[lv] = [];
-        g[lv].push(l);
-      }
-      return g;
-    }
-  },
-
-  methods: {
-    // ── LOGIN ──
-    async login() {
-      if (!this.form.name.trim() || !this.form.classCode.trim()) {
-        this.error = 'Vui lòng nhập đầy đủ họ tên và mã lớp.'; return;
-      }
-      this.loading = true; this.error = null;
-      try {
-        const code = this.form.classCode.trim().toUpperCase();
-        const snap = await db.collection('students')
-          .where('classCode', '==', code)
-          .where('name', '==', this.form.name.trim())
-          .limit(1).get();
-
-        let s;
-        if (snap.empty) {
-          const ref = await db.collection('students').add({
-            name: this.form.name.trim(), classCode: code,
-            enabledLevels: [], approved: false,
-            registeredAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-          s = { id: ref.id, name: this.form.name.trim(), classCode: code, enabledLevels: [], approved: false };
-        } else {
-          const doc = snap.docs[0];
-          s = { id: doc.id, ...doc.data() };
-        }
-        this.student = s;
-        localStorage.setItem('hsk_s', JSON.stringify({ id: s.id }));
-        await this.loadDashboard();
-        this.screen = 'dashboard';
-      } catch (e) {
-        this.error = 'Lỗi kết nối: ' + e.message;
-      } finally { this.loading = false; }
-    },
-
-    logout() {
-      localStorage.removeItem('hsk_s');
-      this.student = null; this.screen = 'login';
-      this.form = { name: '', classCode: '' };
-    },
-
-    async refreshStudent() {
-      if (!this.student) return;
-      const doc = await db.collection('students').doc(this.student.id).get();
-      if (doc.exists) { this.student = { id: doc.id, ...doc.data() }; await this.loadDashboard(); }
-    },
-
-    // ── DASHBOARD ──
-    async loadDashboard() {
-      const s = this.student;
-      if (!s?.approved || !s?.enabledLevels?.length) { this.lessons = []; return; }
-      this.loading = true;
-      try {
-        // Firestore 'in' allows max 10, chunk if needed
-        const levels = s.enabledLevels.slice(0, 10);
-        const snap = await db.collection('lessons')
-          .where('hskLevel', 'in', levels)
-          .where('published', '==', true)
-          .orderBy('number').get();
-        this.lessons = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-        // Load completed
-        const sub = await db.collection('submissions')
-          .where('studentId', '==', s.id).get();
-        this.doneIds = sub.docs.map(d => d.data().lessonId);
-      } catch (e) { console.error(e); }
-      finally { this.loading = false; }
-    },
-
-    // ── START LESSON ──
-    startLesson(l) {
-      this.lesson = l;
-      this.exIdx = 0;
-      this.results = [];
-      this.doneSet = [];
-      this.screen = 'exercise';
-      this.initEx();
-    },
-
-    exitLesson() {
-      if (confirm('Thoát bài? Tiến độ sẽ không được lưu.')) {
-        this.screen = 'dashboard'; this.lesson = null;
-      }
-    },
-
-    initEx() {
-      const e = this.ex;
-      if (!e) return;
-      if (e.type === 'flashcard') { this.fc = { idx: 0, flipped: false }; }
-      else if (e.type === 'matching') {
-        const shuffled = [...e.pairs].sort(() => Math.random() - 0.5);
-        this.mt = { selL: null, selR: null, shuffled, matchedL: [], matchedR: [], done: 0, correct: 0, wrongPair: null };
-      }
-      else if (e.type === 'multiple_choice') { this.mc = { qi: 0, ans: {} }; }
-      else if (e.type === 'sentence_order') {
-        this.so = { idx: 0, avail: this.shuffle([...e.sentences[0].words]), sel: [], result: null, scores: [] };
-      }
-      else if (e.type === 'sentence_translate') { this.st = { idx: 0, ans: {} }; }
-      else if (e.type === 'paragraph_write') { this.pw = { ans: '' }; }
-      else if (e.type === 'paragraph_translate') { this.pt = { ans: '' }; }
-    },
-
-    doneEx(result) {
-      this.results.push(result);
-      if (!this.doneSet.includes(this.exIdx)) this.doneSet.push(this.exIdx);
-      // Advance to next exercise
-      if (this.exIdx < this.lesson.exercises.length - 1) {
-        this.exIdx++;
-        this.initEx();
-        window.scrollTo(0, 0);
-      }
-    },
-
-    // ── FLASHCARD ──
-    fcPrev() { if (this.fc.idx > 0) { this.fc.idx--; this.fc.flipped = false; } },
-    fcNext() { if (this.fc.idx < this.ex.cards.length - 1) { this.fc.idx++; this.fc.flipped = false; } },
-
-    // ── MATCHING ──
-    mtSelL(i) {
-      if (this.mt.matchedL.includes(i)) return;
-      this.mt.selL = i; this.mtCheck();
-    },
-    mtSelR(i) {
-      if (this.mt.matchedR.includes(i)) return;
-      this.mt.selR = i; this.mtCheck();
-    },
-    mtCheck() {
-      if (this.mt.selL === null || this.mt.selR === null) return;
-      const leftItem = this.ex.pairs[this.mt.selL];
-      const rightItem = this.mt.shuffled[this.mt.selR];
-      if (leftItem.left === rightItem.left) {
-        this.mt.matchedL.push(this.mt.selL);
-        this.mt.matchedR.push(this.mt.selR);
-        this.mt.done++; this.mt.correct++;
-      } else {
-        const l = this.mt.selL, r = this.mt.selR;
-        this.mt.wrongPair = { l, r };
-        setTimeout(() => { this.mt.wrongPair = null; }, 700);
-      }
-      this.mt.selL = null; this.mt.selR = null;
-    },
-
-    // ── MULTIPLE CHOICE ──
-    mcPick(oi) {
-      if (this.mc.ans[this.mc.qi] !== undefined) return;
-      this.mc.ans = { ...this.mc.ans, [this.mc.qi]: oi };
-    },
-    mcOptClass(oi) {
-      const a = this.mc.ans[this.mc.qi], correct = this.ex.questions[this.mc.qi]?.answer;
-      if (a === undefined) return 'border-gray-200 bg-white hover:border-red-300 hover:bg-red-50 cursor-pointer';
-      if (oi === correct) return 'border-green-400 bg-green-50 text-green-700';
-      if (oi === a) return 'border-red-400 bg-red-50 text-red-700';
-      return 'border-gray-100 bg-gray-50 text-gray-400 opacity-60';
-    },
-    mcBadgeClass(oi) {
-      const a = this.mc.ans[this.mc.qi], correct = this.ex.questions[this.mc.qi]?.answer;
-      if (a === undefined) return 'border-gray-300 text-gray-500';
-      if (oi === correct) return 'border-green-400 bg-green-400 text-white';
-      if (oi === a) return 'border-red-400 bg-red-400 text-white';
-      return 'border-gray-200 text-gray-400';
-    },
-    mcDone() {
-      const qs = this.ex.questions;
-      const correct = Object.entries(this.mc.ans).filter(([qi, ans]) => qs[+qi]?.answer === ans).length;
-      this.doneEx({ type: 'multiple_choice', score: Math.round(correct / qs.length * 100), correct, total: qs.length });
-    },
-
-    // ── SENTENCE ORDER ──
-    soAdd(i) { this.so.sel.push(this.so.avail[i]); this.so.avail.splice(i, 1); },
-    soRemove(i) { this.so.avail.push(this.so.sel[i]); this.so.sel.splice(i, 1); },
-    soClear() {
-      const s = this.ex.sentences[this.so.idx];
-      this.so.avail = this.shuffle([...s.words]);
-      this.so.sel = []; this.so.result = null;
-    },
-    soCheck() {
-      const ans = this.ex.sentences[this.so.idx].answer;
-      const user = this.so.sel.join('');
-      this.so.result = user === ans || user.replace(/[，。！？]/g,'') === ans.replace(/[，。！？]/g,'');
-      this.so.scores.push(this.so.result ? 1 : 0);
-    },
-    soNext() {
-      this.so.idx++;
-      const s = this.ex.sentences[this.so.idx];
-      this.so.avail = this.shuffle([...s.words]);
-      this.so.sel = []; this.so.result = null;
-    },
-    soDone() {
-      if (this.so.result === null) this.soCheck();
-      const c = this.so.scores.filter(x => x).length;
-      this.doneEx({ type: 'sentence_order', score: Math.round(c / this.ex.sentences.length * 100) });
-    },
-
-    // ── SUBMIT ──
-    async submitLesson() {
-      this.submitting = true;
-      const autoResults = this.results.filter(r => r.score !== null);
-      const autoScore = autoResults.length
-        ? Math.round(autoResults.reduce((s, r) => s + r.score, 0) / autoResults.length)
-        : null;
-
-      const payload = {
-        studentId: this.student.id,
-        studentName: this.student.name,
-        classCode: this.student.classCode,
-        lessonId: this.lesson.id,
-        lessonTitle: this.lesson.title,
-        hskLevel: this.lesson.hskLevel,
-        lessonNumber: this.lesson.number,
-        results: this.results,
-        autoScore,
-        submittedAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
-
-      try {
-        await db.collection('submissions').add(payload);
-        if (!this.doneIds.includes(this.lesson.id)) this.doneIds.push(this.lesson.id);
-
-        // Google Sheets webhook
-        const cfg = await db.collection('config').doc('app').get();
-        const url = cfg.data()?.sheetsWebhookUrl;
-        if (url) {
-          fetch(url, {
-            method: 'POST', mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              time: new Date().toLocaleString('vi-VN'),
-              name: this.student.name,
-              classCode: this.student.classCode,
-              hskLevel: this.lesson.hskLevel,
-              lesson: `Bài ${this.lesson.number}: ${this.lesson.title}`,
-              autoScore: autoScore !== null ? autoScore + '%' : 'Chờ chấm',
-              details: this.results.map(r => {
-                if (r.type === 'flashcard') return `[Từ vựng] Hoàn thành`;
-                if (r.type === 'matching') return `[Nối từ] ${r.score}%`;
-                if (r.type === 'multiple_choice') return `[Trắc nghiệm] ${r.correct}/${r.total} = ${r.score}%`;
-                if (r.type === 'sentence_order') return `[Sắp xếp] ${r.score}%`;
-                if (r.type === 'sentence_translate') return `[Dịch câu] ${(r.answers||[]).join(' | ')}`;
-                if (r.type === 'paragraph_write') return `[Bài viết] ${r.answer?.substring(0,100)}`;
-                if (r.type === 'paragraph_translate') return `[Dịch đoạn] ${r.answer?.substring(0,100)}`;
-                return '';
-              }).join('\n')
-            })
-          }).catch(() => {});
-        }
-
-        this.autoScore = autoScore;
-        this.screen = 'submitted';
-      } catch (e) {
-        alert('Lỗi nộp bài: ' + e.message);
-      } finally { this.submitting = false; }
-    },
-
-    // ── UTILS ──
-    shuffle(a) {
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
-    }
-  },
-
-  async mounted() {
-    const saved = localStorage.getItem('hsk_s');
-    if (saved) {
-      try {
-        const { id } = JSON.parse(saved);
-        const doc = await db.collection('students').doc(id).get();
-        if (doc.exists) {
-          this.student = { id: doc.id, ...doc.data() };
-          await this.loadDashboard();
-          this.screen = 'dashboard';
-        } else { localStorage.removeItem('hsk_s'); }
-      } catch (e) { localStorage.removeItem('hsk_s'); }
-    }
+async function startSession(){
+  const name = document.getElementById('inp-name').value.trim();
+  const cls = document.getElementById('inp-class').value.trim();
+  const errEl = document.getElementById('setup-error');
+  if(!name || !cls){
+    errEl.textContent = "⚠️ Vui lòng điền đầy đủ họ tên và lớp";
+    errEl.style.display='block';
+    return;
   }
-}).mount('#app');
+  errEl.style.display='none';
+  const btn = document.getElementById('btn-start');
+  btn.disabled = true; btn.textContent = "Đang tải dữ liệu...";
+
+  try {
+    const url = `${APPS_SCRIPT_URLS[selectedLevel]}?action=getData&level=${selectedLevel}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(!data.lessons || data.lessons.length===0){
+      throw new Error("Chưa có dữ liệu cho trình độ này");
+    }
+    LESSON_DATA = data;
+    localStorage.setItem('stu-name', name);
+    localStorage.setItem('stu-class', cls);
+    localStorage.setItem('stu-level', selectedLevel);
+
+    document.getElementById('pill-name').textContent = name;
+    document.getElementById('pill-class').textContent = cls;
+    document.getElementById('pill-level').textContent = selectedLevel;
+
+    document.getElementById('setup-screen').style.display='none';
+    document.getElementById('main-area').style.display='block';
+    buildLessonGrid();
+  } catch(err){
+    errEl.textContent = "❌ Không tải được dữ liệu bài học. Kiểm tra lại đường truyền hoặc liên hệ giáo viên. (" + err.message + ")";
+    errEl.style.display='block';
+  } finally {
+    btn.disabled = false; btn.textContent = "Vào học 开始学习 →";
+  }
+}
+
+function backToSetup(){
+  document.getElementById('setup-screen').style.display='block';
+  document.getElementById('main-area').style.display='none';
+  document.getElementById('exercise-area').style.display='none';
+}
+
+/* ─── LESSON GRID ─── */
+function buildLessonGrid(){
+  const grid = document.getElementById('lesson-grid');
+  grid.innerHTML = '';
+  LESSON_DATA.lessons.forEach((l)=>{
+    const num = l.lesson;
+    const done = localStorage.getItem(`done-${selectedLevel}-${num}`) === '1';
+    const d = document.createElement('div');
+    d.className = 'lesson-card'+(done?' done':'');
+    d.innerHTML = `<span class="lesson-num">${num}</span><div class="lesson-label">${(l.title||'').replace(/Bài \d+\s*[-—]\s*/,'')}</div>`;
+    d.onclick = () => loadLesson(num);
+    grid.appendChild(d);
+  });
+}
+
+function getLessonRows(table, lessonNum){
+  return (LESSON_DATA[table]||[]).filter(r => String(r.lesson) === String(lessonNum));
+}
+
+/* ─── LOAD LESSON ─── */
+function loadLesson(num){
+  curLesson = num;
+  panelDone = [false,false,false,false,false,false];
+  scores = {};
+  writingAnswers = [];
+
+  document.querySelectorAll('.lesson-card').forEach((c)=>{
+    c.classList.toggle('active', c.querySelector('.lesson-num').textContent==String(num));
+  });
+
+  const L = LESSON_DATA.lessons.find(l=>String(l.lesson)===String(num));
+  document.getElementById('lh-wm').textContent = L.hanzi_watermark||'字';
+  document.getElementById('lh-title').textContent = L.title||`Bài ${num}`;
+
+  const words = getLessonRows('words', num);
+  const matching = getLessonRows('matching', num);
+  const mc = getLessonRows('mc', num);
+  const so = getLessonRows('sentence_order', num);
+  const tr = getLessonRows('translate', num);
+  const wr = getLessonRows('writing', num);
+
+  document.getElementById('lh-sub').textContent = `${words.length} từ vựng • ${mc.length} câu trắc nghiệm • ${so.length} câu sắp xếp`;
+
+  buildTabs();
+  buildFlashcards(words);
+  buildMatching(matching);
+  buildMC(mc);
+  buildSO(so);
+  buildTS(tr);
+  buildWrite(wr);
+  showPanel(0);
+  updateProgress();
+
+  const ea = document.getElementById('exercise-area');
+  ea.style.display = 'block';
+  ea.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ─── TABS ─── */
+function buildTabs(){
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = '';
+  PANEL_NAMES.forEach((name,i)=>{
+    const t = document.createElement('div');
+    t.className = 'tab'+(i===0?' active':'');
+    t.textContent = name;
+    t.onclick = () => showPanel(i);
+    tabs.appendChild(t);
+  });
+}
+function showPanel(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>{
+    t.className = 'tab'+(j===i?' active':'')+(panelDone[j]?' completed':'');
+  });
+  document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',j===i));
+}
+function markDone(i,sc,max){
+  panelDone[i] = true;
+  scores[i] = sc;
+  showPanel(i);
+  updateProgress();
+  if(i < 5) setTimeout(()=>showPanel(i+1),1100);
+  if(panelDone.every(Boolean)){
+    localStorage.setItem(`done-${selectedLevel}-${curLesson}`,'1');
+    buildLessonGrid();
+    showToast('✅ Bạn đã hoàn thành tất cả các phần! Hãy nộp bài bên dưới.');
+    buildSubmitSummary();
+  }
+}
+function updateProgress(){
+  const pct = panelDone.filter(Boolean).length / 6 * 100;
+  document.getElementById('prog-fill').style.width = pct+'%';
+}
+
+/* ─── PHẦN 1: FLASHCARDS ─── */
+function buildFlashcards(words){
+  const g = document.getElementById('fc-grid');
+  g.innerHTML = '';
+  words.forEach((w,i)=>{
+    g.innerHTML += `<div class="flashcard">
+      <div class="fc-hanzi">${w.hanzi}</div>
+      <div class="fc-label">Pinyin</div>
+      <input class="fc-input" id="fc-p-${i}" placeholder="vd: nǐ hǎo" autocomplete="off">
+      <div class="fc-label" style="margin-top:6px">Nghĩa tiếng Việt</div>
+      <input class="fc-input" id="fc-v-${i}" placeholder="vd: xin chào" autocomplete="off">
+    </div>`;
+  });
+  document.getElementById('fc-score').classList.remove('show');
+}
+function checkFlashcards(){
+  const words = getLessonRows('words', curLesson);
+  let correct=0, total=words.length*2;
+  words.forEach((w,i)=>{
+    const pi=document.getElementById(`fc-p-${i}`), vi=document.getElementById(`fc-v-${i}`);
+    const pc = norm(pi.value)===norm(w.pinyin);
+    const vc = norm(vi.value)===norm(w.vietnamese);
+    pi.className='fc-input '+(pc?'correct':'wrong');
+    vi.className='fc-input '+(vc?'correct':'wrong');
+    if(pc) correct++; if(vc) correct++;
+  });
+  const pct = total? Math.round(correct/total*10):0;
+  showScore('fc-score', pct, 10, `${correct}/${total} ô đúng`);
+  markDone(0, pct, 10);
+}
+function revealFlashcards(){
+  const words = getLessonRows('words', curLesson);
+  words.forEach((w,i)=>{
+    document.getElementById(`fc-p-${i}`).value=w.pinyin;
+    document.getElementById(`fc-v-${i}`).value=w.vietnamese;
+    document.getElementById(`fc-p-${i}`).className='fc-input correct';
+    document.getElementById(`fc-v-${i}`).className='fc-input correct';
+  });
+  markDone(0, 0, 10);
+}
+
+/* ─── PHẦN 2: NỐI TỪ (MATCHING) ─── */
+let matchState = {selectedLeft:null, matched:new Set(), pairs:[]};
+function buildMatching(matching){
+  matchState = {selectedLeft:null, matched:new Set(), pairs: matching.map((m,i)=>({hanzi:m.hanzi, vn:m.vietnamese, idx:i}))};
+  const left = [...matchState.pairs];
+  const right = shuffle([...matchState.pairs]);
+  const leftEl = document.getElementById('match-left');
+  const rightEl = document.getElementById('match-right');
+  leftEl.innerHTML=''; rightEl.innerHTML='';
+  left.forEach(p=>{
+    const d=document.createElement('div');
+    d.className='match-item hanzi'; d.textContent=p.hanzi; d.dataset.idx=p.idx;
+    d.onclick=()=>selectLeft(d,p.idx);
+    leftEl.appendChild(d);
+  });
+  right.forEach(p=>{
+    const d=document.createElement('div');
+    d.className='match-item'; d.textContent=p.vn; d.dataset.idx=p.idx;
+    d.onclick=()=>selectRight(d,p.idx);
+    rightEl.appendChild(d);
+  });
+  document.getElementById('match-score').classList.remove('show');
+}
+function selectLeft(el, idx){
+  if(el.classList.contains('matched')) return;
+  document.querySelectorAll('#match-left .match-item').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  matchState.selectedLeft = idx;
+}
+function selectRight(el, idx){
+  if(el.classList.contains('matched') || matchState.selectedLeft===null) return;
+  const leftEl = document.querySelector(`#match-left .match-item[data-idx="${matchState.selectedLeft}"]`);
+  if(matchState.selectedLeft === idx){
+    leftEl.classList.add('matched'); el.classList.add('matched');
+    leftEl.classList.remove('selected');
+    matchState.matched.add(idx);
+    matchState.selectedLeft = null;
+    if(matchState.matched.size === matchState.pairs.length){
+      const score = matchState.pairs.length; // 1 point per pair
+      showScore('match-score', score, matchState.pairs.length, `${score}/${matchState.pairs.length} cặp đúng`);
+      markDone(1, score, matchState.pairs.length);
+    }
+  } else {
+    el.classList.add('wrong-flash');
+    leftEl.classList.add('wrong-flash');
+    setTimeout(()=>{ el.classList.remove('wrong-flash'); leftEl.classList.remove('wrong-flash','selected'); },500);
+    matchState.selectedLeft = null;
+  }
+}
+
+/* ─── PHẦN 3: TRẮC NGHIỆM ─── */
+function buildMC(mc){
+  const c = document.getElementById('mc-container');
+  c.innerHTML='';
+  mc.forEach((item,qi)=>{
+    const opts = [item.option_a, item.option_b, item.option_c, item.option_d];
+    c.innerHTML += `<div class="mc-item" id="mc-${qi}">
+      <div class="mc-question">${item.question}</div>
+      <div class="mc-pinyin">${item.pinyin||''}</div>
+      <div class="mc-options">
+        ${opts.map((o,oi)=>`<button class="mc-opt" onclick="selectMC(${qi},${oi},${item.answer})">${'ABCD'[oi]}. ${o}</button>`).join('')}
+      </div>
+    </div>`;
+  });
+  document.getElementById('mc-score').classList.remove('show');
+}
+function selectMC(qi,sel,correct){
+  const btns = document.querySelectorAll(`#mc-${qi} .mc-opt`);
+  btns.forEach((b,i)=>{ b.className='mc-opt'+(i==correct?' correct':(i==sel&&sel!=correct?' wrong':'')); });
+}
+function checkMC(){
+  const items = document.querySelectorAll('.mc-item');
+  let score=0;
+  items.forEach(item=>{ if(item.querySelector('.correct')) score++; });
+  showScore('mc-score', score, items.length, `${score}/${items.length} câu đúng`);
+  markDone(2, score, items.length);
+}
+
+/* ─── PHẦN 4: SẮP XẾP CÂU ─── */
+function buildSO(so){
+  const c = document.getElementById('so-container');
+  c.innerHTML='';
+  so.forEach((s,i)=>{
+    const words = String(s.words_shuffled||s.answer).split(' ').filter(Boolean);
+    const shuf = shuffle([...words]);
+    c.innerHTML += `<div style="margin-bottom:18px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">Câu ${i+1}</div>
+      <div class="so-words" id="bank-${i}">
+        ${shuf.map((w)=>`<span class="word-chip" onclick="moveWord(this,'bank-${i}','ans-${i}')">${w}</span>`).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin:4px 0">Câu trả lời (nhấn từ bên trên để thêm vào đây):</div>
+      <div class="answer-zone" id="ans-${i}"></div>
+      <div class="so-feedback" id="so-fb-${i}"></div>
+    </div>`;
+  });
+  document.getElementById('so-score').classList.remove('show');
+}
+function moveWord(chip, fromId, toId){
+  const to=document.getElementById(toId), from=document.getElementById(fromId);
+  if(chip.parentElement.id===fromId){ chip.classList.add('in-answer'); to.appendChild(chip); }
+  else { chip.classList.remove('in-answer'); from.appendChild(chip); }
+}
+function checkSO(){
+  const so = getLessonRows('sentence_order', curLesson);
+  let score=0;
+  so.forEach((s,i)=>{
+    const ans=document.getElementById(`ans-${i}`);
+    const fb=document.getElementById(`so-fb-${i}`);
+    const got=[...ans.children].map(c=>c.textContent).join(' ');
+    const correct = String(s.answer).trim();
+    const ok = got.replace(/\s/g,'')===correct.replace(/\s/g,'');
+    fb.style.display='block';
+    if(ok){ score+=2; fb.style.color='var(--jade)'; fb.textContent='✓ Đúng rồi!'; }
+    else { fb.style.color='var(--red)'; fb.textContent=`✗ Câu đúng: ${correct}`; }
+  });
+  const max = so.length*2;
+  showScore('so-score', score, max, `${score/2}/${so.length} câu đúng`);
+  markDone(3, score, max);
+}
+function resetSO(){ buildSO(getLessonRows('sentence_order', curLesson)); }
+
+/* ─── PHẦN 5: DỊCH CÂU ─── */
+function buildTS(tr){
+  const c = document.getElementById('ts-container');
+  c.innerHTML='';
+  tr.forEach((s,i)=>{
+    c.innerHTML += `<div style="margin-bottom:16px">
+      <div class="trans-sentence">${s.chinese}</div>
+      <textarea class="trans-input" id="ts-${i}" placeholder="Dịch sang tiếng Việt..."></textarea>
+      <div class="trans-result" id="ts-r-${i}"></div>
+    </div>`;
+  });
+  document.getElementById('ts-score').classList.remove('show');
+}
+function checkTS(){
+  const tr = getLessonRows('translate', curLesson);
+  let score=0;
+  tr.forEach((s,i)=>{
+    const inp = document.getElementById(`ts-${i}`);
+    const r = document.getElementById(`ts-r-${i}`);
+    const got = norm(inp.value);
+    const ref = norm(s.vietnamese);
+    // chấm gần đúng: tính tỉ lệ từ trùng khớp
+    const gotWords = got.split(/\s+/).filter(Boolean);
+    const refWords = ref.split(/\s+/).filter(Boolean);
+    const matchCount = gotWords.filter(w=>refWords.includes(w)).length;
+    const similarity = refWords.length? matchCount/refWords.length : 0;
+    let pts = 0;
+    if(similarity >= 0.7) pts = 2;
+    else if(similarity >= 0.4) pts = 1;
+    score += pts;
+    r.style.display='block';
+    r.style.color = pts===2 ? 'var(--jade)' : pts===1 ? '#b8860b' : 'var(--red)';
+    r.textContent = pts===2 ? '✓ Rất tốt!' : pts===1 ? `~ Gần đúng — Đáp án mẫu: ${s.vietnamese}` : `✗ Đáp án mẫu: ${s.vietnamese}`;
+  });
+  const max = tr.length*2;
+  showScore('ts-score', score, max, `${score}/${max} điểm (tự động ước lượng)`);
+  markDone(4, score, max);
+}
+
+/* ─── PHẦN 6: ĐẶT CÂU (tự luận) ─── */
+function buildWrite(wr){
+  const c = document.getElementById('write-container');
+  c.innerHTML='';
+  writingAnswers = new Array(wr.length).fill('');
+  wr.forEach((w,i)=>{
+    c.innerHTML += `<div class="write-card">
+      <div class="write-word">${w.word}</div>
+      <div class="write-hint">💡 ${w.hint||''}</div>
+      <textarea class="write-input" id="write-${i}" placeholder="Viết câu của em ở đây..." oninput="writingAnswers[${i}]=this.value"></textarea>
+    </div>`;
+  });
+}
+function markWritingDone(){
+  const wr = getLessonRows('writing', curLesson);
+  const text = wr.map((w,i)=>`[${w.word}] ${writingAnswers[i]||'(chưa làm)'}`).join('\n');
+  writingAnswers._compiled = text;
+  markDone(5, 0, 0);
+  showToast('✅ Đã lưu phần đặt câu — giáo viên sẽ chấm sau khi em nộp bài');
+}
+
+/* ─── SUBMIT ─── */
+function buildSubmitSummary(){
+  const el = document.getElementById('submit-summary');
+  el.innerHTML = PANEL_NAMES.map((n,i)=>{
+    const done = panelDone[i];
+    const sc = scores[i];
+    const label = i===5 ? (done?'Đã hoàn thành':'Chưa làm') : (done? `${sc} điểm` : 'Chưa làm');
+    return `<div><span>${n}</span><span>${label}</span></div>`;
+  }).join('');
+}
+async function submitResults(){
+  if(!panelDone.every(Boolean)){
+    showToast('⚠️ Hãy hoàn thành cả 6 phần trước khi nộp bài', true);
+    return;
+  }
+  const name = localStorage.getItem('stu-name');
+  const cls = localStorage.getItem('stu-class');
+  const wr = getLessonRows('writing', curLesson);
+  const writingText = wr.map((w,i)=>`[${w.word}] ${writingAnswers[i]||'(chưa làm)'}`).join(' | ');
+
+  const payload = {
+    name, className: cls, level: selectedLevel, lesson: curLesson,
+    p1: scores[0]||0, p2: scores[1]||0, p3: scores[2]||0, p4: scores[3]||0, p5: scores[4]||0,
+    writingAnswers: writingText
+  };
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = 'Đang nộp bài...';
+
+  try {
+    await fetch(APPS_SCRIPT_URLS[selectedLevel], {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type':'text/plain'},
+      body: JSON.stringify(payload)
+    });
+    showToast('🎉 Nộp bài thành công! Kết quả đã gửi đến giáo viên.');
+    btn.textContent = '✅ Đã nộp bài';
+  } catch(err){
+    showToast('❌ Lỗi khi nộp bài, thử lại sau', true);
+    btn.disabled = false; btn.textContent = 'Nộp bài 提交 →';
+  }
+}
+
+/* ─── HELPERS ─── */
+function norm(s){ return (s||'').toString().trim().toLowerCase().normalize('NFC').replace(/[.,!?;:]/g,''); }
+function shuffle(a){ return a.sort(()=>Math.random()-.5); }
+function showScore(id, score, max, label){
+  const el=document.getElementById(id);
+  const rank = max? (score>=max*.9?'Xuất sắc':score>=max*.75?'Giỏi':score>=max*.6?'Khá':score>=max*.4?'Trung bình':'Cần cố gắng') : '';
+  el.innerHTML=`<div class="score-num">${score}</div><div><div class="score-label">${label}</div>${rank?`<div style="font-size:12px;font-weight:600;color:var(--jade)">${rank}</div>`:''}</div>`;
+  el.classList.add('show');
+}
+function showToast(msg, isError){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(isError?' error':'');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
 </script>
 </body>
 </html>
