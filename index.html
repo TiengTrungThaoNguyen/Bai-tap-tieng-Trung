@@ -10,7 +10,6 @@
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Be Vietnam Pro','Segoe UI',system-ui,sans-serif;background:linear-gradient(160deg,#8B0000 0%,#c0392b 35%,#e74c3c 60%,#f8d7da 100%);min-height:100vh;}
 
-  /* HERO */
   .hero{background:linear-gradient(135deg,#8B0000 0%,#c0392b 50%,#922b21 100%);padding:28px 20px 32px;text-align:center;position:relative;overflow:hidden;}
   .hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/svg%3E");pointer-events:none;}
   .hero-inner{position:relative;max-width:700px;margin:0 auto;}
@@ -20,17 +19,14 @@
   .hero-sub{font-size:13px;color:rgba(255,255,255,.65);margin-top:6px;}
   .hero-divider{width:48px;height:3px;background:rgba(255,255,255,.5);border-radius:99px;margin:14px auto 0;}
 
-  /* MAIN */
   .main{max-width:700px;margin:0 auto;padding:0 14px 60px;}
   .card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow-lg);margin-top:-12px;overflow:hidden;}
   .card-body{padding:28px 28px 32px;}
   .screen{display:none;}.screen.active{display:block;}
 
-  /* SECTION TITLE */
   .section-title{font-size:13px;font-weight:700;color:var(--red-dk);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
   .section-title::before{content:'';display:block;width:4px;height:16px;background:var(--red);border-radius:2px;}
 
-  /* LEVEL GRID */
   .level-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px;}
   .level-card{border:2px solid var(--border);border-radius:var(--radius-sm);padding:18px 14px 16px;text-align:center;cursor:pointer;transition:all .22s cubic-bezier(.4,0,.2,1);background:var(--white);position:relative;}
   .level-card:hover{transform:translateY(-3px);box-shadow:var(--shadow);}
@@ -51,7 +47,6 @@
   .hsk4 .level-badge{background:#fef3c7;color:#b45309;}
   .hsk5 .level-badge{background:#fee2e2;color:#b91c1c;}
 
-  /* FORM */
   .form-divider{border:none;border-top:1px dashed var(--border);margin:0 0 24px;}
   .form-row{margin-bottom:16px;}
   .form-row label{display:block;font-size:12px;font-weight:700;margin-bottom:5px;color:#374151;text-transform:uppercase;letter-spacing:.5px;}
@@ -61,7 +56,6 @@
   .error-msg{color:var(--red);font-size:11px;margin-top:4px;display:none;font-weight:600;}
   .error-level{color:var(--red);font-size:12px;font-weight:600;margin:-8px 0 14px;display:none;}
 
-  /* BUTTONS */
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 24px;border-radius:var(--radius-sm);font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:none;transition:all .18s;letter-spacing:.3px;}
   .btn:active{transform:scale(.97);}
   .btn:disabled{opacity:.5;cursor:not-allowed;}
@@ -72,13 +66,11 @@
   .btn-outline{background:var(--white);border:1.5px solid var(--border);color:#374151;}
   .btn-outline:hover{background:var(--gray-lt);}
 
-  /* LOADING */
   .loading-box{text-align:center;padding:60px 20px;}
   .spinner{width:44px;height:44px;border:4px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .65s linear infinite;margin:0 auto 16px;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .loading-text{font-size:14px;color:var(--gray);font-weight:500;}
 
-  /* QUIZ */
   .quiz-topbar{background:linear-gradient(135deg,var(--red-dk) 0%,var(--red) 100%);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .quiz-level-pill{font-size:12px;font-weight:800;color:#fff;background:rgba(255,255,255,.18);border-radius:99px;padding:4px 12px;letter-spacing:.5px;}
   .quiz-student-info{font-size:12px;color:rgba(255,255,255,.8);text-align:right;line-height:1.4;}
@@ -90,11 +82,10 @@
   .q-label{font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
   .q-text{font-size:16px;font-weight:600;line-height:1.65;color:#111827;margin-bottom:12px;}
 
-  /* HINT BOX — chữ Hán + Pinyin gợi ý */
   .hint-box{background:var(--red-pale);border:1px solid #fecaca;border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:18px;text-align:center;display:none;}
+  .hint-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#f87171;font-weight:700;margin-bottom:6px;}
   .hint-hanzi{font-size:32px;font-weight:700;color:var(--red-dk);letter-spacing:6px;line-height:1.2;}
   .hint-pinyin{font-size:15px;color:#b91c1c;margin-top:6px;font-style:italic;letter-spacing:2px;font-weight:500;}
-  .hint-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#f87171;font-weight:700;margin-bottom:6px;}
 
   .choices{display:flex;flex-direction:column;gap:9px;}
   .choice{display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:var(--radius-sm);border:1.5px solid var(--border);cursor:pointer;transition:all .15s;font-size:14px;font-weight:500;color:#374151;background:var(--white);}
@@ -112,7 +103,6 @@
   .feedback.wrong{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;}
   .quiz-nav{display:flex;justify-content:flex-end;margin-top:18px;}
 
-  /* RESULT */
   .result-hero{background:linear-gradient(135deg,var(--red-dk) 0%,var(--red) 100%);padding:28px 20px;text-align:center;}
   .score-ring{width:110px;height:110px;border-radius:50%;border:5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.12);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 14px;}
   .score-big{font-size:36px;font-weight:900;color:#fff;line-height:1;}
@@ -127,20 +117,14 @@
   .result-table .c{color:#16a34a;font-weight:700;}
   .result-table .w{color:#ef4444;font-weight:700;}
   .submit-status{text-align:center;font-size:12px;color:var(--gray);margin-top:10px;min-height:18px;font-weight:600;}
-  .submit-status.ok{color:#16a34a;}
-  .submit-status.err{color:#ef4444;}
+  .submit-status.ok{color:#16a34a;}.submit-status.err{color:#ef4444;}
   .result-divider{border:none;border-top:1px solid var(--border);margin:18px 0;}
-
   .footer{text-align:center;padding:18px;font-size:11px;color:rgba(255,255,255,.5);}
 
   @media(max-width:480px){
-    .card-body{padding:20px 16px 24px;}
-    .quiz-body{padding:16px;}
-    .result-body{padding:16px;}
-    .level-grid{grid-template-columns:1fr;}
-    .level-card.hsk5{grid-column:span 1;}
-    .hero-title{font-size:21px;}
-    .hint-hanzi{font-size:26px;}
+    .card-body{padding:20px 16px 24px;}.quiz-body{padding:16px;}.result-body{padding:16px;}
+    .level-grid{grid-template-columns:1fr;}.level-card.hsk5{grid-column:span 1;}
+    .hero-title{font-size:21px;}.hint-hanzi{font-size:26px;}
   }
 </style>
 </head>
@@ -156,43 +140,42 @@
   </div>
 </div>
 
-<div class="main">
-<div class="card">
+<div class="main"><div class="card">
 
   <!-- SCREEN 1: Trang chủ -->
   <div class="screen active" id="screen-home">
     <div class="card-body">
       <div class="section-title">Chọn cấp độ</div>
       <div class="level-grid">
-        <div class="level-card hsk1" onclick="selectLevel(1)">
+        <div class="level-card hsk1" onclick="selectLevel('HSK1')">
           <span class="level-badge">Sơ cấp 1</span>
           <span class="level-icon">🌱</span>
           <div class="level-name">HSK 1</div>
           <div class="level-hanzi">初级一</div>
           <div class="level-desc">150 từ vựng cơ bản</div>
         </div>
-        <div class="level-card hsk2" onclick="selectLevel(2)">
+        <div class="level-card hsk2" onclick="selectLevel('HSK2')">
           <span class="level-badge">Sơ cấp 2</span>
           <span class="level-icon">📗</span>
           <div class="level-name">HSK 2</div>
           <div class="level-hanzi">初级二</div>
           <div class="level-desc">300 từ vựng</div>
         </div>
-        <div class="level-card hsk3" onclick="selectLevel(3)">
+        <div class="level-card hsk3" onclick="selectLevel('HSK3')">
           <span class="level-badge">Trung cấp 1</span>
           <span class="level-icon">📘</span>
           <div class="level-name">HSK 3</div>
           <div class="level-hanzi">中级一</div>
           <div class="level-desc">600 từ vựng</div>
         </div>
-        <div class="level-card hsk4" onclick="selectLevel(4)">
+        <div class="level-card hsk4" onclick="selectLevel('HSK4')">
           <span class="level-badge">Trung cấp 2</span>
           <span class="level-icon">📙</span>
           <div class="level-name">HSK 4</div>
           <div class="level-hanzi">中级二</div>
           <div class="level-desc">1200 từ vựng</div>
         </div>
-        <div class="level-card hsk5" onclick="selectLevel(5)">
+        <div class="level-card hsk5" onclick="selectLevel('HSK5')">
           <span class="level-badge">Cao cấp</span>
           <span class="level-icon">🏆</span>
           <div class="level-name">HSK 5</div>
@@ -201,7 +184,6 @@
         </div>
       </div>
       <div class="error-level" id="err-level">⚠ Vui lòng chọn cấp độ HSK trước khi bắt đầu.</div>
-
       <hr class="form-divider">
       <div class="section-title">Thông tin học viên</div>
       <div class="form-row">
@@ -247,20 +229,15 @@
     <div class="quiz-body">
       <div class="q-label" id="q-label">Câu 1</div>
       <div class="q-text"  id="q-text"></div>
-
-      <!-- Hint box: chữ Hán + Pinyin gợi ý (chỉ hiện khi có dữ liệu) -->
       <div class="hint-box" id="hint-box">
         <div class="hint-label">💡 Gợi ý phát âm</div>
         <div class="hint-hanzi"  id="hint-hanzi"></div>
         <div class="hint-pinyin" id="hint-pinyin"></div>
       </div>
-
       <div class="choices"  id="q-choices"></div>
       <div class="feedback" id="q-feedback"></div>
       <div class="quiz-nav">
-        <button class="btn btn-primary" id="btn-next" onclick="nextQuestion()" disabled>
-          Câu tiếp →
-        </button>
+        <button class="btn btn-primary" id="btn-next" onclick="nextQuestion()" disabled>Câu tiếp →</button>
       </div>
     </div>
   </div>
@@ -269,7 +246,7 @@
   <div class="screen" id="screen-result">
     <div class="result-hero">
       <div class="score-ring">
-        <div class="score-big"  id="res-score">0</div>
+        <div class="score-big" id="res-score">0</div>
         <div class="score-denom">/ <span id="res-total">0</span> câu</div>
       </div>
       <div class="result-grade" id="res-grade">–</div>
@@ -289,29 +266,31 @@
     </div>
   </div>
 
-</div>
-</div>
-
+</div></div>
 <div class="footer">© Tiếng Trung Thảo Nguyên – 草原汉语课堂</div>
 
 <script>
-const HSK = {
-  1:{label:"HSK 1",url:"https://script.google.com/macros/s/AKfycbzj4GUU2oAk4rk0KYlOuPT01LkieGYuBkSwkS_ZweKRRY9NYMyNYcN__3iWtVb5dYUZDA/exec"},
-  2:{label:"HSK 2",url:"https://script.google.com/macros/s/AKfycbxFczj3LllbQoP01_r0TMIcAvT7QczLZ3Lpc8TFwC_FENFvvs6NWBDo_GDrMkYrWbmc/exec"},
-  3:{label:"HSK 3",url:"https://script.google.com/macros/s/AKfycbyZ4HDG75eOOfLutiCmNOVRvl4fCQANm1l-r8HqsYxkLKarfsCdqO7YZATHWo4Adag5/exec"},
-  4:{label:"HSK 4",url:"https://script.google.com/macros/s/AKfycbzty6iDlYJM5gSG1c92vkywyel38rgy4jpz__1g5dNBm-OMqhauOa3FRANaM8pB4nkc/exec"},
-  5:{label:"HSK 5",url:"https://script.google.com/macros/s/AKfycbxLBIN6uKvw8BaV5l60CBEE2RpxqZl1Y2q8RCciVo_QkWXi5YeqfMSYD2mmYy5IT5Q0/exec"}
+// ═══════════════════════════════════════════════════════
+// 5 ENDPOINT — mỗi cấp 1 link Apps Script riêng
+// ═══════════════════════════════════════════════════════
+const HSK_URL = {
+  HSK1: "https://script.google.com/macros/s/AKfycbzj4GUU2oAk4rk0KYlOuPT01LkieGYuBkSwkS_ZweKRRY9NYMyNYcN__3iWtVb5dYUZDA/exec",
+  HSK2: "https://script.google.com/macros/s/AKfycbxFczj3LllbQoP01_r0TMIcAvT7QczLZ3Lpc8TFwC_FENFvvs6NWBDo_GDrMkYrWbmc/exec",
+  HSK3: "https://script.google.com/macros/s/AKfycbyZ4HDG75eOOfLutiCmNOVRvl4fCQANm1l-r8HqsYxkLKarfsCdqO7YZATHWo4Adag5/exec",
+  HSK4: "https://script.google.com/macros/s/AKfycbzty6iDlYJM5gSG1c92vkywyel38rgy4jpz__1g5dNBm-OMqhauOa3FRANaM8pB4nkc/exec",
+  HSK5: "https://script.google.com/macros/s/AKfycbxLBIN6uKvw8BaV5l60CBEE2RpxqZl1Y2q8RCciVo_QkWXi5YeqfMSYD2mmYy5IT5Q0/exec"
 };
 
-const LABELS=["A","B","C","D"];
-let level=0,name="",cls="",questions=[],current=0,answers=[],locked=false;
+const HSK_LABEL = {HSK1:"HSK 1",HSK2:"HSK 2",HSK3:"HSK 3",HSK4:"HSK 4",HSK5:"HSK 5"};
+const LABELS = ["A","B","C","D"];
+let level="", name="", cls="", questions=[], current=0, answers=[], locked=false;
 
 function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");window.scrollTo({top:0,behavior:"smooth"});}
 
-function selectLevel(n){
-  level=n;
+function selectLevel(l){
+  level=l;
   document.querySelectorAll(".level-card").forEach(el=>el.classList.remove("selected"));
-  document.querySelector(".hsk"+n).classList.add("selected");
+  document.querySelector("."+l.toLowerCase()).classList.add("selected");
   document.getElementById("err-level").style.display="none";
 }
 
@@ -324,20 +303,29 @@ function startQuiz(){
   if(!c||!/^[A-Z0-9]{2,6}-[A-Z0-9]{1,4}$/.test(c)){document.getElementById("err-class").style.display="block";ok=false;}
   if(!level){document.getElementById("err-level").style.display="block";ok=false;}
   if(!ok)return;
-  name=n;cls=c;answers=[];current=0;
+  name=n; cls=c; answers=[]; current=0;
   loadQuestions();
 }
 
 async function loadQuestions(){
   show("screen-loading");
-  document.getElementById("loading-msg").textContent="Đang tải câu hỏi "+HSK[level].label+"…";
+  document.getElementById("loading-msg").textContent="Đang tải câu hỏi "+HSK_LABEL[level]+"…";
   try{
-    const res=await fetch(HSK[level].url+"?action=getQuestions");
-    const data=await res.json();
-    // Hỗ trợ nhiều dạng trả về
-    let qs=Array.isArray(data)?data:(Array.isArray(data.data)?data.data:(Array.isArray(data.questions)?data.questions:[]));
-    if(!qs.length)throw new Error("Không có dữ liệu câu hỏi");
-    questions=shuffle(qs).slice(0,10).map(normalize);
+    // Gọi đúng theo Apps Script: action=getData&level=HSK1
+    const url = HSK_URL[level] + "?action=getData&level=" + level;
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    // Apps Script trả về object có key "mc" chứa mảng câu hỏi trắc nghiệm
+    // VD: { mc: [{question, pinyin, option_a, option_b, option_c, option_d, answer}, ...] }
+    let qs = [];
+    if(data.mc && Array.isArray(data.mc))         qs = data.mc;
+    else if(Array.isArray(data))                   qs = data;
+    else if(data.data && Array.isArray(data.data)) qs = data.data;
+
+    if(!qs.length) throw new Error("Chưa có câu hỏi trong sheet mc_"+level);
+
+    questions = shuffle(qs).slice(0,10).map(normalize);
     renderQuiz();
   }catch(e){
     document.getElementById("loading-msg").innerHTML=
@@ -346,45 +334,39 @@ async function loadQuestions(){
   }
 }
 
-// Chuẩn hóa câu hỏi theo đúng cấu trúc:
-// lesson | question(hanzi) | pinyin | option_a | option_b | option_c | option_d | answer(0-3)
+// Chuẩn hóa câu hỏi theo cấu trúc:
+// question | pinyin | option_a | option_b | option_c | option_d | answer (số 0-3)
 function normalize(q){
-  // Nếu Apps Script trả về object với đúng tên cột
-  const question = q.question || q.cauHoi || q.hanzi || q.Q || q[0] || "";
-  const pinyin   = q.pinyin   || q.phienAm || "";   // cột pinyin — hiển thị gợi ý
-  const hanzi    = q.question || q.hanzi   || "";   // chữ Hán (chính là question)
+  const question = String(q.question || q.cauHoi || q.Q || "").trim();
+  const pinyin   = String(q.pinyin   || "").trim();
+  const choices  = [
+    String(q.option_a || q.A || "").trim(),
+    String(q.option_b || q.B || "").trim(),
+    String(q.option_c || q.C || "").trim(),
+    String(q.option_d || q.D || "").trim()
+  ].filter(x => x !== "");
 
-  // Đáp án — ưu tiên option_a/b/c/d, fallback về A/B/C/D hoặc index
-  const choices = q.choices ? q.choices : [
-    q.option_a || q.A || q[2] || "",
-    q.option_b || q.B || q[3] || "",
-    q.option_c || q.C || q[4] || "",
-    q.option_d || q.D || q[5] || ""
-  ].filter(Boolean);
-
-  // answer: số 0-3 hoặc chữ A/B/C/D
-  let correct = q.correct ?? q.answer ?? q.dapAn ?? 0;
-  if(typeof correct==="string"){
-    const map={A:0,B:1,C:2,D:3};
+  let correct = q.answer ?? q.correct ?? q.dapAn ?? 0;
+  if(typeof correct === "string"){
+    const map = {A:0,B:1,C:2,D:3};
     correct = map[correct.toUpperCase()] ?? parseInt(correct) ?? 0;
   }
   correct = Number(correct);
 
-  return { question, hanzi, pinyin, choices, correct };
+  return { question, pinyin, choices, correct };
 }
 
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 
 function renderQuiz(){
-  document.getElementById("quiz-level-pill").textContent=HSK[level].label;
-  document.getElementById("quiz-student-info").innerHTML=name+"<br>Lớp: "+cls;
+  document.getElementById("quiz-level-pill").textContent = HSK_LABEL[level];
+  document.getElementById("quiz-student-info").innerHTML = name+"<br>Lớp: "+cls;
   show("screen-quiz");
   renderQuestion();
 }
 
 function renderQuestion(){
-  const total=questions.length, q=questions[current];
-  locked=false;
+  const total=questions.length, q=questions[current]; locked=false;
   const pct=Math.round((current/total)*100);
   document.getElementById("prog-text").textContent="Câu "+(current+1)+" / "+total;
   document.getElementById("prog-pct").textContent=pct+"%";
@@ -392,23 +374,16 @@ function renderQuestion(){
   document.getElementById("q-label").textContent="Câu "+(current+1);
   document.getElementById("q-text").textContent=q.question;
 
-  // Hint box: chỉ hiện nếu có pinyin hoặc hanzi
-  const hintBox    = document.getElementById("hint-box");
-  const hintHanzi  = document.getElementById("hint-hanzi");
-  const hintPinyin = document.getElementById("hint-pinyin");
-
-  if(q.pinyin || q.hanzi){
-    hintBox.style.display = "block";
-    hintHanzi.textContent  = q.hanzi   || "";
-    hintPinyin.textContent = q.pinyin  || "";
-    // Ẩn dòng pinyin nếu trống
-    hintPinyin.style.display = q.pinyin ? "block" : "none";
-    // Ẩn dòng hanzi nếu trùng câu hỏi (tránh lặp)
-    hintHanzi.style.display  = (q.hanzi && q.hanzi !== q.question) ? "block" : "none";
-    // Nếu cả 2 đều ẩn thì ẩn luôn box
-    if(!q.pinyin && q.hanzi === q.question) hintBox.style.display="none";
+  // Gợi ý phiên âm — chỉ hiện khi có pinyin
+  const hintBox = document.getElementById("hint-box");
+  const hintH   = document.getElementById("hint-hanzi");
+  const hintP   = document.getElementById("hint-pinyin");
+  if(q.pinyin){
+    hintBox.style.display="block";
+    hintH.textContent = q.question; // chữ Hán
+    hintP.textContent = q.pinyin;   // pinyin
   } else {
-    hintBox.style.display = "none";
+    hintBox.style.display="none";
   }
 
   const fb=document.getElementById("q-feedback");
@@ -416,14 +391,11 @@ function renderQuestion(){
   document.getElementById("btn-next").disabled=true;
   document.getElementById("btn-next").textContent=current===total-1?"Xem kết quả ✓":"Câu tiếp →";
 
-  const el=document.getElementById("q-choices");
-  el.innerHTML="";
+  const el=document.getElementById("q-choices"); el.innerHTML="";
   q.choices.forEach((c,i)=>{
-    const div=document.createElement("div");
-    div.className="choice";
+    const div=document.createElement("div"); div.className="choice";
     div.innerHTML='<div class="badge">'+LABELS[i]+'</div><span>'+c+'</span>';
-    div.onclick=()=>pick(i);
-    el.appendChild(div);
+    div.onclick=()=>pick(i); el.appendChild(div);
   });
 }
 
@@ -436,8 +408,7 @@ function pick(chosen){
     if(i===chosen&&!ok) el.classList.add("wrong");
     if(i===chosen&&ok)  el.classList.add("selected");
   });
-  const fb=document.getElementById("q-feedback");
-  fb.style.display="block";
+  const fb=document.getElementById("q-feedback"); fb.style.display="block";
   if(ok){fb.className="feedback correct";fb.textContent="✓ Chính xác!";}
   else{fb.className="feedback wrong";fb.textContent="✗ Đáp án đúng: "+LABELS[correct]+". "+q.choices[correct];}
   answers.push({chosen,correct:ok});
@@ -450,7 +421,7 @@ function showResult(){
   const total=questions.length, score=answers.filter(a=>a.correct).length, pct=Math.round((score/total)*100);
   document.getElementById("res-score").textContent=score;
   document.getElementById("res-total").textContent=total;
-  document.getElementById("res-info").textContent=name+" · Lớp: "+cls+" · "+HSK[level].label;
+  document.getElementById("res-info").textContent=name+" · Lớp: "+cls+" · "+HSK_LABEL[level];
   const grades=[[90,"🏆 Xuất sắc!"],[75,"🌟 Giỏi"],[60,"👍 Khá"],[50,"📝 Trung bình"],[0,"💪 Cần ôn thêm"]];
   document.getElementById("res-grade").textContent=grades.find(g=>pct>=g[0])[1];
   const tbody=document.getElementById("res-tbody"); tbody.innerHTML="";
@@ -471,11 +442,20 @@ async function submitResult(){
   const total=questions.length, score=answers.filter(a=>a.correct).length;
   btn.disabled=true; btn.textContent="⏳ Đang gửi…";
   st.textContent=""; st.className="submit-status";
-  const payload={action:"submitResult",name,classCode:cls,level:HSK[level].label,score,total,
-    pct:Math.round((score/total)*100),
-    detail:answers.map((a,i)=>({q:i+1,correct:a.correct,chosen:LABELS[a.chosen]}))};
+
+  // Gửi đúng format Apps Script doPost cũ đang xử lý
+  const payload={
+    name:          name,
+    className:     cls,
+    level:         HSK_LABEL[level],
+    lesson:        "",
+    p1: score,  // điểm trắc nghiệm ghi vào cột p3
+    p2: 0, p3: score, p4: 0, p5: 0,
+    writingAnswers: answers.map((a,i)=>"C"+(i+1)+":"+(a.correct?"✓":"✗")+"("+LABELS[a.chosen]+")").join(" ")
+  };
+
   try{
-    await fetch(HSK[level].url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    await fetch(HSK_URL[level],{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     st.textContent="✓ Gửi thành công! Kết quả đã được lưu vào bảng điểm.";
     st.className="submit-status ok"; btn.textContent="✓ Đã gửi";
   }catch(e){
@@ -486,7 +466,7 @@ async function submitResult(){
 }
 
 function goHome(){
-  level=0;current=0;answers=[];questions=[];
+  level=""; current=0; answers=[]; questions=[];
   document.querySelectorAll(".level-card").forEach(el=>el.classList.remove("selected"));
   show("screen-home");
 }
