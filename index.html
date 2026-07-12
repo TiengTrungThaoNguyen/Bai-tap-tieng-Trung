@@ -473,12 +473,30 @@ function renderLessonList(){
 // ───────────────────────────────────────────────────────
 // BƯỚC 2: Chọn 1 bài học → dựng chuỗi 6 hoạt động, bắt đầu làm bài
 // ───────────────────────────────────────────────────────
+// Loại bỏ các dòng thiếu dữ liệu cần thiết (vd: có part1 nhưng thiếu part2 trong sheet)
+// để không hiển thị câu hỏi trống / gây lỗi khi làm bài.
+function cleanItems(type, items){
+  switch(type){
+    case "flashcard":      return items.filter(r => String(r.hanzi || r.word || "").trim());
+    case "matching":       return items.filter(r => String(r.part1 || "").trim() && String(r.part2 || "").trim());
+    case "mc":              return items.filter(r => String(r.question || r.cauHoi || r.Q || "").trim());
+    case "sentence_order":  return items.filter(r => String(r.answer || "").trim());
+    case "translate":       return items.filter(r => String(r.vietnamese || "").trim() && String(r.chinese || "").trim());
+    case "writing":         return items.filter(r => String(r.word || "").trim());
+    default:                return items;
+  }
+}
+
 function selectLesson(lessonObj){
   currentLesson = lessonObj;
-  activities = ACT_DEFS.map(def => ({
-    ...def,
-    items: filterByLesson(pickArr(levelData, def.key), lessonObj.lesson)
-  })).filter(a => a.items.length > 0);
+  const droppedInfo = [];
+  activities = ACT_DEFS.map(def => {
+    const raw = filterByLesson(pickArr(levelData, def.key), lessonObj.lesson);
+    const clean = cleanItems(def.type, raw);
+    if(clean.length < raw.length) droppedInfo.push(def.label+": bỏ qua "+(raw.length-clean.length)+"/"+raw.length+" dòng thiếu dữ liệu");
+    return {...def, items: clean};
+  }).filter(a => a.items.length > 0);
+  if(droppedInfo.length) console.warn("[HSK] Một số dòng trong Google Sheet thiếu dữ liệu và đã bị bỏ qua:", droppedInfo);
 
   if(!activities.length){
     alert("Bài học này chưa có nội dung nào. Vui lòng chọn bài khác hoặc liên hệ giáo viên.");
@@ -538,12 +556,20 @@ function renderStep(){
   title.textContent = act.icon+" "+act.label;
   body.appendChild(title);
 
-  if(act.type==="flashcard")        renderFlashcard(body, act.items[itemIndex]);
-  else if(act.type==="matching")    renderMatching(body, act);
-  else if(act.type==="mc")          renderMC(body, act.items[itemIndex]);
-  else if(act.type==="sentence_order") renderSentenceOrder(body, act.items[itemIndex]);
-  else if(act.type==="translate")   renderTranslate(body, act.items[itemIndex]);
-  else if(act.type==="writing")     renderWriting(body, act.items[itemIndex]);
+  try{
+    if(act.type==="flashcard")        renderFlashcard(body, act.items[itemIndex]);
+    else if(act.type==="matching")    renderMatching(body, act);
+    else if(act.type==="mc")          renderMC(body, act.items[itemIndex]);
+    else if(act.type==="sentence_order") renderSentenceOrder(body, act.items[itemIndex]);
+    else if(act.type==="translate")   renderTranslate(body, act.items[itemIndex]);
+    else if(act.type==="writing")     renderWriting(body, act.items[itemIndex]);
+  }catch(e){
+    console.error("[HSK] Lỗi khi hiển thị câu — có thể dữ liệu Sheet thiếu cột:", e, act, itemIndex);
+    body.insertAdjacentHTML("beforeend",
+      '<div class="empty-box">⚠ Không hiển thị được câu này (dữ liệu trong Google Sheet có thể thiếu cột hoặc để trống).</div>'+
+      '<div class="quiz-nav"><button class="btn btn-primary" onclick="goNextItem()">Bỏ qua, tiếp theo →</button></div>'
+    );
+  }
 }
 
 function goNextItem(){
@@ -588,7 +614,7 @@ function renderMatching(body, act){
   const item = act.items[itemIndex];
   const part1 = item.part1 || "";
   const correct = item.part2 || "";
-  const otherOptions = act.items.filter((_,i)=>i!==itemIndex).map(x=>x.part2).filter(Boolean);
+  const otherOptions = act.items.filter((_,i)=>i!==itemIndex).map(x=>x.part2).filter(v => v && String(v).trim() && v!==correct);
   const distractors = shuffle([...new Set(otherOptions)]).slice(0,3);
   const options = shuffle([correct, ...distractors]);
   body.insertAdjacentHTML("beforeend",
