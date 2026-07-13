@@ -357,13 +357,21 @@ const LABELS = ["A","B","C","D"];
 // Định nghĩa 6 dạng bài, theo đúng tên sheet trong Google Sheet:
 // words_<LEVEL>, matching_<LEVEL>, mc_<LEVEL>, sentence_order_<LEVEL>, translate_<LEVEL>, writing_<LEVEL>
 const ACT_DEFS = [
-  {key:"words",          type:"flashcard",       label:"Lật thẻ",       icon:"🎴"},
+  {key:"words",          type:"word_matching",   label:"Nối từ",        icon:"🔤"},
   {key:"matching",        type:"matching",        label:"Nối ý",         icon:"🔗"},
   {key:"mc",              type:"mc",              label:"Trắc nghiệm",   icon:"✅"},
-  {key:"sentence_order",  type:"sentence_order",  label:"Sắp xếp câu",   icon:"🔤"},
+  {key:"sentence_order",  type:"sentence_order",  label:"Sắp xếp câu",   icon:"🧩"},
   {key:"translate",       type:"translate",       label:"Dịch câu",      icon:"🌐"},
   {key:"writing",         type:"writing",         label:"Đặt câu",       icon:"✍️"}
 ];
+
+// Tổng điểm tự động chấm = 100, chia đều cho 5 dạng có đáp án đúng/sai rõ ràng
+// (Nối từ, Nối ý, Trắc nghiệm, Sắp xếp câu, Dịch câu — mỗi dạng 20 điểm, chia
+// đều cho số câu thực tế của bài đó). "Đặt câu" là bài viết tự do, máy không
+// có đáp án để so sánh nên không thể tự chấm — vẫn tách riêng để giáo viên
+// chấm tay, không nằm trong 100 điểm này.
+// Muốn đổi trọng số từng dạng thì sửa các số bên dưới (miễn tổng vẫn là 100).
+const SCORE_WEIGHTS = { word_matching: 20, matching: 20, mc: 20, sentence_order: 20, translate: 20 };
 
 let level="", name="", cls="";
 let levelData = null;          // dữ liệu thô của cả cấp độ (đã tải 1 lần)
@@ -399,8 +407,22 @@ function pickArr(data, base){
   return foundKey && Array.isArray(data[foundKey]) ? data[foundKey] : [];
 }
 
+// Chuẩn hoá số bài học để so khớp không phụ thuộc định dạng khác nhau giữa các sheet
+// (vd: 2, "2", "02", "Bài 2", " 2 " đều được coi là cùng một bài).
+function normalizeLessonKey(v){
+  const s = String(v ?? "").trim();
+  const m = s.match(/\d+/);
+  if(m) return String(parseInt(m[0], 10));
+  return s.toLowerCase();
+}
+function lessonSortValue(v){
+  const n = parseInt(normalizeLessonKey(v), 10);
+  return isNaN(n) ? Number.MAX_SAFE_INTEGER : n;
+}
+
 function filterByLesson(arr, lessonNum){
-  return arr.filter(r => String(r.lesson ?? r.Lesson ?? r.LESSON ?? "").trim() === String(lessonNum).trim());
+  const target = normalizeLessonKey(lessonNum);
+  return arr.filter(r => normalizeLessonKey(r.lesson ?? r.Lesson ?? r.LESSON ?? "") === target);
 }
 
 // ───────────────────────────────────────────────────────
@@ -437,17 +459,18 @@ function renderLessonList(){
   document.getElementById("lessons-title").textContent = "Chọn bài học — " + HSK_LABEL[level];
   let lessons = pickArr(levelData, "lessons");
   if(!lessons.length){
-    // Không có sheet lessons_<LEVEL> riêng → suy ra danh sách bài từ các dạng bài khác
-    const nums = new Set();
+    // Không có sheet lessons_<LEVEL> riêng → suy ra danh sách bài từ các dạng bài khác,
+    // dùng số bài đã chuẩn hoá để không bị trùng/lệch do định dạng khác nhau giữa các sheet.
+    const seen = new Map();
     ACT_DEFS.forEach(d=>{
       pickArr(levelData, d.key).forEach(r=>{
-        const ln = String(r.lesson ?? r.Lesson ?? "").trim();
-        if(ln) nums.add(ln);
+        const key = normalizeLessonKey(r.lesson ?? r.Lesson ?? "");
+        if(key && !seen.has(key)) seen.set(key, key);
       });
     });
-    lessons = [...nums].sort((a,b)=>Number(a)-Number(b)).map(n=>({lesson:n,title:"",hanzi_watermark:""}));
+    lessons = [...seen.values()].sort((a,b)=>lessonSortValue(a)-lessonSortValue(b)).map(n=>({lesson:n,title:"",hanzi_watermark:""}));
   } else {
-    lessons = [...lessons].sort((a,b)=>Number(a.lesson)-Number(b.lesson));
+    lessons = [...lessons].sort((a,b)=>lessonSortValue(a.lesson)-lessonSortValue(b.lesson));
   }
   const listEl = document.getElementById("lesson-list");
   const emptyEl = document.getElementById("lessons-empty");
@@ -477,7 +500,7 @@ function renderLessonList(){
 // để không hiển thị câu hỏi trống / gây lỗi khi làm bài.
 function cleanItems(type, items){
   switch(type){
-    case "flashcard":      return items.filter(r => String(r.hanzi || r.word || "").trim());
+    case "word_matching":  return items.filter(r => String(r.hanzi || r.word || "").trim() && String(r.vietnamese || r.nghia || "").trim());
     case "matching":       return items.filter(r => String(r.part1 || "").trim() && String(r.part2 || "").trim());
     case "mc":              return items.filter(r => String(r.question || r.cauHoi || r.Q || "").trim());
     case "sentence_order":  return items.filter(r => String(r.answer || "").trim());
@@ -506,9 +529,8 @@ function selectLesson(lessonObj){
   actIndex = 0; itemIndex = 0;
   results = {};
   activities.forEach(a=>{
-    if(a.type==="flashcard")      results[a.type] = {reviewed:0, total:a.items.length};
-    else if(a.type==="writing")   results[a.type] = {answers:[]};
-    else                          results[a.type] = {correct:0, total:a.items.length, detail:[]};
+    if(a.type==="writing")   results[a.type] = {answers:[]};
+    else                     results[a.type] = {correct:0, total:a.items.length, detail:[]};
   });
 
   document.getElementById("act-student-info").textContent = name+" · Lớp: "+cls;
@@ -557,7 +579,7 @@ function renderStep(){
   body.appendChild(title);
 
   try{
-    if(act.type==="flashcard")        renderFlashcard(body, act.items[itemIndex]);
+    if(act.type==="word_matching")    renderWordMatching(body, act);
     else if(act.type==="matching")    renderMatching(body, act);
     else if(act.type==="mc")          renderMC(body, act.items[itemIndex]);
     else if(act.type==="sentence_order") renderSentenceOrder(body, act.items[itemIndex]);
@@ -585,28 +607,28 @@ function goNextItem(){
   renderStep();
 }
 
-// ── 1. FLASHCARD ──
-function renderFlashcard(body, item){
+// ── 1. NỐI TỪ (từ tiếng Trung ↔ ý nghĩa tiếng Việt) ──
+function renderWordMatching(body, act){
+  const item = act.items[itemIndex];
   const hanzi = item.hanzi || item.word || "";
   const pinyin = item.pinyin || "";
-  const vn = item.vietnamese || item.nghia || "";
+  const correct = item.vietnamese || item.nghia || "";
+  const otherOptions = act.items.filter((_,i)=>i!==itemIndex).map(x=>x.vietnamese || x.nghia).filter(v => v && String(v).trim() && v!==correct);
+  const distractors = shuffle([...new Set(otherOptions)]).slice(0,3);
+  const options = shuffle([correct, ...distractors]);
   body.insertAdjacentHTML("beforeend",
-    '<div class="flash-card" id="flash-card" onclick="flipFlash()">'+
-      '<div class="flash-hanzi">'+hanzi+'</div>'+
-      '<div class="flash-pinyin">'+pinyin+'</div>'+
-      '<div class="flash-vn">'+vn+'</div>'+
-    '</div>'+
-    '<div class="flash-hint">👆 Chạm vào thẻ để xem nghĩa</div>'+
-    '<div class="quiz-nav"><button class="btn btn-primary" onclick="flashNext()">Đã thuộc, tiếp theo →</button></div>'
+    '<div class="q-text">'+hanzi+(pinyin ? ' <span style="font-weight:400;color:var(--gray);font-size:14px">('+pinyin+')</span>' : '')+'</div>'+
+    '<div class="choices" id="q-choices"></div>'+
+    '<div class="feedback" id="q-feedback"></div>'+
+    '<div class="quiz-nav"><button class="btn btn-primary" id="btn-next" disabled onclick="goNextItem()">Câu tiếp →</button></div>'
   );
-}
-function flipFlash(){
-  document.getElementById("flash-card").classList.toggle("flipped");
-}
-function flashNext(){
-  const act = activities[actIndex];
-  results[act.type].reviewed++;
-  goNextItem();
+  const choicesEl = document.getElementById("q-choices");
+  options.forEach((opt,i)=>{
+    const div=document.createElement("div"); div.className="choice";
+    div.innerHTML='<div class="badge">'+LABELS[i]+'</div><span>'+opt+'</span>';
+    div.onclick=()=>pickMatching(opt, correct, div);
+    choicesEl.appendChild(div);
+  });
 }
 
 // ── 2. MATCHING (nối ý) ──
@@ -838,17 +860,35 @@ function saveWriting(word, hint){
 // ───────────────────────────────────────────────────────
 // KẾT QUẢ
 // ───────────────────────────────────────────────────────
+// Tính điểm quy đổi /100 cho các dạng có đáp án đúng/sai, dùng chung cho
+// màn kết quả và lúc nộp bài để đảm bảo số gửi lên sheet khớp với số hiển thị.
+function computeScore100(){
+  let score = 0;
+  const perType = {};
+  activities.forEach(a=>{
+    const weight = SCORE_WEIGHTS[a.type];
+    if(!weight) return; // flashcard / writing không tính vào 100 điểm
+    const r = results[a.type];
+    const points = r.total ? (r.correct / r.total) * weight : 0;
+    perType[a.type] = { points: points, weight: weight, correct: r.correct, total: r.total };
+    score += points;
+  });
+  return { score: Math.round(score * 10) / 10, perType: perType };
+}
+
 function showResult(){
-  let autoScore=0, autoMax=0;
+  const { score: autoScore, perType } = computeScore100();
   const breakdownEl = document.getElementById("res-breakdown");
   breakdownEl.innerHTML = "";
   activities.forEach(a=>{
     const r = results[a.type];
-    let scoreText, scoreVal=0, maxVal=0;
-    if(a.type==="flashcard"){ scoreVal=r.reviewed; maxVal=r.total; }
-    else if(a.type==="writing"){ scoreText = r.answers.length+" câu đã nộp"; }
-    else { scoreVal=r.correct; maxVal=r.total; }
-    if(a.type!=="writing"){ autoScore+=scoreVal; autoMax+=maxVal; scoreText = scoreVal+"/"+maxVal; }
+    let scoreText;
+    if(a.type==="writing"){
+      scoreText = r.answers.length+" câu — chờ GV chấm";
+    } else {
+      const pt = perType[a.type];
+      scoreText = pt.points.toFixed(1)+"/"+pt.weight+" điểm ("+pt.correct+"/"+pt.total+" câu đúng)";
+    }
     breakdownEl.insertAdjacentHTML("beforeend",
       '<div class="result-bar-row">'+
         '<span class="result-bar-icon">'+a.icon+'</span>'+
@@ -859,11 +899,10 @@ function showResult(){
   });
 
   document.getElementById("res-score").textContent = autoScore;
-  document.getElementById("res-total").textContent = autoMax;
+  document.getElementById("res-total").textContent = 100;
   document.getElementById("res-info").textContent = name+" · Lớp: "+cls+" · "+HSK_LABEL[level]+" · Bài "+currentLesson.lesson;
-  const pct = autoMax ? Math.round((autoScore/autoMax)*100) : 0;
   const grades=[[90,"🏆 Xuất sắc!"],[75,"🌟 Giỏi"],[60,"👍 Khá"],[50,"📝 Trung bình"],[0,"💪 Cần ôn thêm"]];
-  document.getElementById("res-grade").textContent = grades.find(g=>pct>=g[0])[1];
+  document.getElementById("res-grade").textContent = grades.find(g=>autoScore>=g[0])[1];
 
   const writingAct = activities.find(a=>a.type==="writing");
   const writingWrap = document.getElementById("res-writing-wrap");
@@ -880,11 +919,17 @@ function showResult(){
     writingWrap.style.display="none";
   }
 
-  document.getElementById("btn-submit").disabled=false;
+  document.getElementById("btn-submit").disabled=true;
   document.getElementById("btn-submit").textContent="☁ Gửi kết quả lên bảng điểm";
   document.getElementById("submit-status").textContent="";
   document.getElementById("submit-status").className="submit-status";
   show("screen-result");
+
+  // Điểm đã hiện cho học sinh thấy ngay ở trên — đồng thời tự động gửi luôn
+  // kết quả về Google Sheet, không cần học sinh bấm thêm nút nào nữa.
+  // Nút "Gửi kết quả" vẫn để đó phòng khi gửi tự động bị lỗi mạng, học sinh
+  // có thể bấm gửi lại.
+  submitResult();
 }
 
 async function submitResult(){
@@ -892,14 +937,13 @@ async function submitResult(){
   btn.disabled=true; btn.textContent="⏳ Đang gửi…";
   st.textContent=""; st.className="submit-status";
 
-  const flash = results.flashcard || {reviewed:0,total:0};
+  const { score: autoScore, perType } = computeScore100();
+  const wordMatching = results.word_matching || {correct:0,total:0};
   const matching = results.matching || {correct:0,total:0};
   const mc = results.mc || {correct:0,total:0};
   const sentord = results.sentence_order || {correct:0,total:0};
   const translate = results.translate || {correct:0,total:0};
   const writing = results.writing || {answers:[]};
-  const autoScore = flash.reviewed + matching.correct + mc.correct + sentord.correct + translate.correct;
-  const autoMax = flash.total + matching.total + mc.total + sentord.total + translate.total;
 
   const payload = {
     action: "submitResult",
@@ -909,22 +953,23 @@ async function submitResult(){
     level: HSK_LABEL[level],
     lesson: currentLesson.lesson,
     lessonTitle: currentLesson.title || "",
-    flashcard: flash, matching: matching, mc: mc,
+    word_matching: wordMatching, matching: matching, mc: mc,
     sentence_order: sentord, translate: translate,
     writing: writing.answers,
-    totalAutoScore: autoScore,
-    totalAutoMax: autoMax,
+    totalAutoScore: autoScore,   // điểm quy đổi /100 — dùng số này làm điểm chính thức
+    totalAutoMax: 100,
+    scoreBreakdown: perType,     // chi tiết điểm từng dạng (đã quy đổi theo trọng số)
     // Các field tương thích ngược, phòng khi Apps Script cũ đang đọc theo tên field cũ:
-    p1: flash.reviewed, p2: matching.correct, p3: mc.correct, p4: sentord.correct, p5: translate.correct,
+    p1: wordMatching.correct, p2: matching.correct, p3: mc.correct, p4: sentord.correct, p5: translate.correct,
     writingAnswers: writing.answers.map((a,i)=>(i+1)+". "+a.word+": "+a.answer).join(" | ")
   };
 
   try{
     await fetch(HSK_URL[level],{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     st.textContent="✓ Gửi thành công! Kết quả đã được lưu vào bảng điểm.";
-    st.className="submit-status ok"; btn.textContent="✓ Đã gửi";
+    st.className="submit-status ok"; btn.textContent="✓ Đã gửi"; btn.disabled=true;
   }catch(e){
-    st.textContent="✗ Lỗi kết nối. Vui lòng thử lại.";
+    st.textContent="✗ Lỗi kết nối. Bấm để gửi lại.";
     st.className="submit-status err"; btn.disabled=false;
     btn.textContent="☁ Gửi kết quả lên bảng điểm";
   }
