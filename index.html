@@ -810,28 +810,33 @@ function checkSentordDone(){
 }
 
 // ── 5. DỊCH CÂU (translate) ──
+// Chấp nhận nhiều đáp án đúng: cột "chinese" (đáp án 1, bắt buộc), và tuỳ chọn
+// thêm cột "chinese2" / "chinese3" trong sheet cho đáp án 2, đáp án 3.
 function renderTranslate(body, item){
   const vn = item.vietnamese || "";
-  const cn = String(item.chinese || "").replace(/\s+/g,"");
+  window.__translateAnswers = [item.chinese, item.chinese2, item.chinese3]
+    .map(a => String(a || "").replace(/\s+/g,"").trim())
+    .filter(a => a !== "");
   body.insertAdjacentHTML("beforeend",
     '<div class="q-text">'+vn+'</div>'+
     '<input type="text" class="translate-input" id="translate-input" placeholder="Nhập câu tiếng Trung tương ứng...">'+
     '<div class="feedback" id="q-feedback"></div>'+
     '<div class="quiz-nav">'+
-      '<button class="btn btn-primary" id="btn-check" onclick="checkTranslate(\''+cn.replace(/'/g,"\\'")+'\')">Kiểm tra</button>'+
+      '<button class="btn btn-primary" id="btn-check" onclick="checkTranslate()">Kiểm tra</button>'+
       '<button class="btn btn-outline" id="btn-next" style="display:none;margin-left:8px" onclick="goNextItem()">Câu tiếp →</button>'+
     '</div>'
   );
 }
-function checkTranslate(correct){
+function checkTranslate(){
+  const accepted = window.__translateAnswers || [];
   const inp = document.getElementById("translate-input");
   const given = inp.value.replace(/\s+/g,"").trim();
-  const ok = given!=="" && given===correct;
+  const ok = given!=="" && accepted.includes(given);
   inp.disabled = true;
   const fb = document.getElementById("q-feedback");
   fb.style.display="block";
   fb.className = "feedback "+(ok?"correct":"wrong");
-  fb.textContent = ok ? "✓ Chính xác!" : "✗ Đáp án đúng: "+correct;
+  fb.textContent = ok ? "✓ Chính xác!" : "✗ Đáp án đúng: "+accepted.join(" / ");
   const act = activities[actIndex];
   if(ok) results[act.type].correct++;
   results[act.type].detail.push({q:inp.value, ok});
