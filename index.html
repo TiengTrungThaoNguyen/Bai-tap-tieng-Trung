@@ -382,6 +382,7 @@ let itemIndex = 0;             // câu hiện tại trong hoạt động
 let results = {};              // kết quả từng dạng bài
 let sentordBuilt = [];         // trạng thái sắp xếp câu hiện tại
 let sentordPoolUsed = [];
+let sentordSubmitted = false;  // đã bấm "Nộp bài" cho câu sắp xếp hiện tại chưa
 
 function show(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
@@ -742,24 +743,27 @@ function pickMC(chosen, q, el){
 // hoặc cuối câu đều đúng). LƯU Ý: answer2/answer3 phải dùng ĐÚNG các từ giống
 // answer 1 (chỉ khác thứ tự) — vì các thẻ từ cho học sinh chọn được lấy từ
 // đáp án 1, không phải gõ tự do.
+// Không hiển thị câu tiếng Việt trong lúc làm bài (tránh gợi ý/lộ đáp án),
+// và KHÔNG tự chấm ngay khi xếp đủ từ — chỉ chấm + hiện đáp án khi học sinh
+// bấm "Nộp bài" cho câu đó.
 function renderSentenceOrder(body, item){
   const answer = String(item.answer || "").trim();
   const altAnswers = [item.answer2, item.answer3]
     .map(a => String(a || "").trim())
     .filter(a => a !== "");
-  const vn = item.vietnamese || "";
   const words = answer.split(/\s+/).filter(Boolean);
   sentordBuilt = [];
   sentordPoolUsed = new Array(words.length).fill(false);
+  sentordSubmitted = false;
   const pool = shuffle(words.map((w,i)=>({w,i})));
   body.insertAdjacentHTML("beforeend",
-    (vn ? '<div class="sentord-vn">💬 '+vn+'</div>' : '') +
     '<div class="sentord-answer" id="sentord-answer"></div>'+
     '<div class="sentord-pool" id="sentord-pool"></div>'+
     '<div class="feedback" id="q-feedback"></div>'+
     '<div class="quiz-nav" style="justify-content:space-between">'+
-      '<button class="btn btn-outline" onclick="sentordUndo()">↺ Xóa từ cuối</button>'+
-      '<button class="btn btn-primary" id="btn-next" disabled onclick="goNextItem()">Câu tiếp →</button>'+
+      '<button class="btn btn-outline" id="btn-sentord-undo" onclick="sentordUndo()">↺ Xóa từ cuối</button>'+
+      '<button class="btn btn-primary" id="btn-sentord-submit" disabled onclick="submitSentordAnswer()">Nộp bài</button>'+
+      '<button class="btn btn-primary" id="btn-next" style="display:none" onclick="goNextItem()">Câu tiếp →</button>'+
     '</div>'
   );
   window.__sentordWords = words;
@@ -774,17 +778,17 @@ function renderSentenceOrder(body, item){
   });
 }
 function sentordPick(i, tokEl){
-  if(sentordPoolUsed[i]) return;
+  if(sentordSubmitted || sentordPoolUsed[i]) return;
   sentordPoolUsed[i] = true;
   tokEl.classList.add("used");
   sentordBuilt.push(window.__sentordWords[i]);
   renderSentordAnswer();
-  if(sentordBuilt.length === window.__sentordWords.length) checkSentordDone();
+  const submitBtn = document.getElementById("btn-sentord-submit");
+  if(submitBtn) submitBtn.disabled = sentordBuilt.length !== window.__sentordWords.length;
 }
 function sentordUndo(){
-  if(!sentordBuilt.length) return;
+  if(sentordSubmitted || !sentordBuilt.length) return;
   sentordBuilt.pop();
-  document.querySelectorAll("#sentord-pool .word-tok.used").forEach((el,idx)=>{});
   // reset used flags & re-render pool usage based on remaining built words
   const used = new Array(window.__sentordWords.length).fill(false);
   const remainingCounts = {};
@@ -798,12 +802,24 @@ function sentordUndo(){
     tok.classList.toggle("used", used[i]);
   });
   renderSentordAnswer();
-  document.getElementById("btn-next").disabled = true;
-  const fb = document.getElementById("q-feedback"); fb.style.display="none";
+  const submitBtn = document.getElementById("btn-sentord-submit");
+  if(submitBtn) submitBtn.disabled = true;
 }
 function renderSentordAnswer(){
   const el = document.getElementById("sentord-answer");
   el.innerHTML = sentordBuilt.map(w=>'<span class="word-tok" style="cursor:default">'+w+'</span>').join("");
+}
+function submitSentordAnswer(){
+  if(sentordSubmitted || sentordBuilt.length !== window.__sentordWords.length) return;
+  sentordSubmitted = true;
+  checkSentordDone();
+  const submitBtn = document.getElementById("btn-sentord-submit");
+  if(submitBtn) submitBtn.style.display = "none";
+  const nextBtn = document.getElementById("btn-next");
+  if(nextBtn) nextBtn.style.display = "inline-flex";
+  const undoBtn = document.getElementById("btn-sentord-undo");
+  if(undoBtn) undoBtn.disabled = true;
+  document.querySelectorAll("#sentord-pool .word-tok").forEach(tok=>{ tok.style.pointerEvents = "none"; });
 }
 function checkSentordDone(){
   const built = sentordBuilt.join(" ");
@@ -816,7 +832,6 @@ function checkSentordDone(){
   const act = activities[actIndex];
   if(ok) results[act.type].correct++;
   results[act.type].detail.push({q:window.__sentordAnswer, ok});
-  document.getElementById("btn-next").disabled = false;
 }
 
 // ── 5. DỊCH CÂU (translate) ──
