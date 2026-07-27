@@ -745,7 +745,8 @@ function pickMC(chosen, q, el){
 // đáp án 1, không phải gõ tự do.
 // Không hiển thị câu tiếng Việt trong lúc làm bài (tránh gợi ý/lộ đáp án),
 // và KHÔNG tự chấm ngay khi xếp đủ từ — chỉ chấm + hiện đáp án khi học sinh
-// bấm "Nộp bài" cho câu đó.
+// bấm nút "Câu tiếp →" (lần bấm đầu tiên chỉ chấm + hiện đáp án, lần bấm thứ
+// hai mới thật sự chuyển sang câu kế tiếp).
 function renderSentenceOrder(body, item){
   const answer = String(item.answer || "").trim();
   const altAnswers = [item.answer2, item.answer3]
@@ -762,8 +763,7 @@ function renderSentenceOrder(body, item){
     '<div class="feedback" id="q-feedback"></div>'+
     '<div class="quiz-nav" style="justify-content:space-between">'+
       '<button class="btn btn-outline" id="btn-sentord-undo" onclick="sentordUndo()">↺ Xóa từ cuối</button>'+
-      '<button class="btn btn-primary" id="btn-sentord-submit" disabled onclick="submitSentordAnswer()">Nộp bài</button>'+
-      '<button class="btn btn-primary" id="btn-next" style="display:none" onclick="goNextItem()">Câu tiếp →</button>'+
+      '<button class="btn btn-primary" id="btn-next" disabled onclick="sentordNextOrCheck()">Câu tiếp →</button>'+
     '</div>'
   );
   window.__sentordWords = words;
@@ -783,8 +783,8 @@ function sentordPick(i, tokEl){
   tokEl.classList.add("used");
   sentordBuilt.push(window.__sentordWords[i]);
   renderSentordAnswer();
-  const submitBtn = document.getElementById("btn-sentord-submit");
-  if(submitBtn) submitBtn.disabled = sentordBuilt.length !== window.__sentordWords.length;
+  const nextBtn = document.getElementById("btn-next");
+  if(nextBtn) nextBtn.disabled = sentordBuilt.length !== window.__sentordWords.length;
 }
 function sentordUndo(){
   if(sentordSubmitted || !sentordBuilt.length) return;
@@ -802,24 +802,26 @@ function sentordUndo(){
     tok.classList.toggle("used", used[i]);
   });
   renderSentordAnswer();
-  const submitBtn = document.getElementById("btn-sentord-submit");
-  if(submitBtn) submitBtn.disabled = true;
+  const nextBtn = document.getElementById("btn-next");
+  if(nextBtn) nextBtn.disabled = true;
 }
 function renderSentordAnswer(){
   const el = document.getElementById("sentord-answer");
   el.innerHTML = sentordBuilt.map(w=>'<span class="word-tok" style="cursor:default">'+w+'</span>').join("");
 }
-function submitSentordAnswer(){
-  if(sentordSubmitted || sentordBuilt.length !== window.__sentordWords.length) return;
-  sentordSubmitted = true;
-  checkSentordDone();
-  const submitBtn = document.getElementById("btn-sentord-submit");
-  if(submitBtn) submitBtn.style.display = "none";
-  const nextBtn = document.getElementById("btn-next");
-  if(nextBtn) nextBtn.style.display = "inline-flex";
-  const undoBtn = document.getElementById("btn-sentord-undo");
-  if(undoBtn) undoBtn.disabled = true;
-  document.querySelectorAll("#sentord-pool .word-tok").forEach(tok=>{ tok.style.pointerEvents = "none"; });
+// Bấm "Câu tiếp →" lần đầu (khi đã xếp đủ từ): chấm điểm + hiện đáp án, KHÔNG
+// chuyển câu ngay. Bấm lần thứ hai mới thật sự chuyển sang câu kế tiếp.
+function sentordNextOrCheck(){
+  if(sentordBuilt.length !== window.__sentordWords.length) return;
+  if(!sentordSubmitted){
+    sentordSubmitted = true;
+    checkSentordDone();
+    const undoBtn = document.getElementById("btn-sentord-undo");
+    if(undoBtn) undoBtn.disabled = true;
+    document.querySelectorAll("#sentord-pool .word-tok").forEach(tok=>{ tok.style.pointerEvents = "none"; });
+  } else {
+    goNextItem();
+  }
 }
 function checkSentordDone(){
   const built = sentordBuilt.join(" ");
