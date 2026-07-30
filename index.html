@@ -383,6 +383,7 @@ let results = {};              // kết quả từng dạng bài
 let sentordBuilt = [];         // trạng thái sắp xếp câu hiện tại
 let sentordPoolUsed = [];
 let sentordSubmitted = false;  // đã bấm "Nộp bài" cho câu sắp xếp hiện tại chưa
+let translatePunctPenalty = 0; // tổng điểm bị trừ (thang 100) do sai dấu câu ở phần Dịch câu
 
 function show(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
@@ -529,6 +530,7 @@ function selectLesson(lessonObj){
 
   actIndex = 0; itemIndex = 0;
   results = {};
+  translatePunctPenalty = 0;
   activities.forEach(a=>{
     if(a.type==="writing")   results[a.type] = {answers:[]};
     else                     results[a.type] = {correct:0, total:a.items.length, detail:[]};
@@ -839,11 +841,72 @@ function checkSentordDone(){
 // ── 5. DỊCH CÂU (translate) ──
 // Chấp nhận nhiều đáp án đúng: cột "chinese" (đáp án 1, bắt buộc), và tuỳ chọn
 // thêm cột "chinese2" / "chinese3" trong sheet cho đáp án 2, đáp án 3.
+//
+// LỖI ĐÃ SỬA: trước đây so khớp so sánh NGUYÊN VĂN từng ký tự (chỉ bỏ khoảng
+// trắng), nên học sinh dịch đúng nghĩa/đúng câu nhưng gõ dấu câu khác kiểu với
+// đáp án trong sheet (VD gõ dấu "," "." "!" "?" nửa-độ-rộng thay vì "，" "。"
+// "！" "？" đầy-độ-rộng chuẩn tiếng Trung — rất hay gặp vì bàn phím điện thoại/
+// máy tính mặc định ra dấu câu Latin trừ khi bật đúng chế độ gõ tiếng Trung),
+// hoặc thiếu/thừa dấu câu cuối câu, hoặc dùng dấu ngoặc/nháy kiểu khác — đều bị
+// chấm SAI dù nội dung câu dịch hoàn toàn chính xác. Nay bỏ qua toàn bộ dấu câu
+// (cả kiểu Trung lẫn Latin) khi so sánh, chỉ so khớp phần chữ Hán + số + chữ
+// cái thực sự, để việc chấm điểm tập trung đúng vào nội dung dịch, không phạt
+// oan vì khác biệt dấu câu.
+function normalizeTranslateAnswer(s){
+  return String(s || "")
+    .trim()
+    .replace(/[\s　]+/g, "")
+    .replace(/[，,。.！!？?、;；:：""''‘’「」『』（）()《》<>~～\-—…]/g, "");
+}
+// Quy đổi dấu câu cùng LOẠI (Trung/Latin) về chung 1 ký hiệu để so sánh —
+// nhờ vậy gõ dấu nửa-độ-rộng hay đầy-độ-rộng của CÙNG một loại dấu (VD "," và
+// "，") không bị tính là sai; chỉ tính là "sai dấu câu" khi khác LOẠI dấu, hoặc
+// thiếu/thừa dấu so với đáp án.
+const PUNCT_CANON_MAP = {
+  "，":",", ",":",",
+  "。":".", ".":".",
+  "！":"!", "!":"!",
+  "？":"?", "?":"?",
+  "、":"、",
+  "；":";", ";":";",
+  "：":":", ":":":",
+  "“":'"', "”":'"', '"':'"',
+  "‘":"'", "’":"'", "'":"'",
+  "（":"(", "(":"(",
+  "）":")", ")":")",
+  "《":"<", "<":"<",
+  "》":">", ">":">",
+  "～":"~", "~":"~",
+  "—":"-", "-":"-", "…":"..."
+};
+const PUNCT_CHARS_REGEX = /[，,。.！!？?、;；:：""''‘’「」『』（）()《》<>~～\-—…]/g;
+function extractPunctTokens(s){
+  const matches = String(s || "").match(PUNCT_CHARS_REGEX) || [];
+  return matches.map(ch => PUNCT_CANON_MAP[ch] || ch);
+}
+// Levenshtein distance giữa 2 dãy token dấu câu — số bước sửa (thêm/bớt/đổi)
+// tối thiểu để biến dãy dấu câu học sinh gõ thành đúng dãy dấu câu chuẩn.
+// Mỗi bước sửa = 1 lỗi dấu câu = trừ 2 điểm (xem checkTranslate).
+function levenshteinTokens(a, b){
+  const n = a.length, m = b.length;
+  const dp = Array.from({length:n+1}, () => new Array(m+1).fill(0));
+  for(let i=0;i<=n;i++) dp[i][0] = i;
+  for(let j=0;j<=m;j++) dp[0][j] = j;
+  for(let i=1;i<=n;i++){
+    for(let j=1;j<=m;j++){
+      dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] : 1+Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+  }
+  return dp[n][m];
+}
+const PUNCT_PENALTY_PER_ERROR = 2; // điểm trừ (trên thang 100) cho mỗi dấu câu sai
 function renderTranslate(body, item){
   const vn = item.vietnamese || "";
-  window.__translateAnswers = [item.chinese, item.chinese2, item.chinese3]
-    .map(a => String(a || "").replace(/\s+/g,"").trim())
+  const rawAnswers = [item.chinese, item.chinese2, item.chinese3]
+    .map(a => String(a || "").trim())
     .filter(a => a !== "");
+  window.__translateAnswersDisplay = rawAnswers;      // để hiện đáp án gốc (có dấu câu) cho học sinh xem
+  window.__translateAnswers = rawAnswers.map(a => normalizeTranslateAnswer(a)); // để so khớp, bỏ qua dấu câu
   body.insertAdjacentHTML("beforeend",
     '<div class="q-text">'+vn+'</div>'+
     '<input type="text" class="translate-input" id="translate-input" placeholder="Nhập câu tiếng Trung tương ứng...">'+
@@ -856,17 +919,39 @@ function renderTranslate(body, item){
 }
 function checkTranslate(){
   const accepted = window.__translateAnswers || [];
+  const displayAnswers = window.__translateAnswersDisplay || accepted;
   const inp = document.getElementById("translate-input");
-  const given = inp.value.replace(/\s+/g,"").trim();
-  const ok = given!=="" && accepted.includes(given);
+  const rawGiven = inp.value.trim();
+  const given = normalizeTranslateAnswer(rawGiven);
+  const matchIdx = given!=="" ? accepted.indexOf(given) : -1;
+  const ok = matchIdx !== -1;
   inp.disabled = true;
   const fb = document.getElementById("q-feedback");
   fb.style.display="block";
   fb.className = "feedback "+(ok?"correct":"wrong");
-  fb.textContent = ok ? "✓ Chính xác!" : "✗ Đáp án đúng: "+accepted.join(" / ");
+
+  // Nội dung dịch đúng thì KHÔNG bị chấm sai cả câu chỉ vì dấu câu khác biệt,
+  // nhưng mỗi dấu câu sai (khác loại, thiếu, hoặc thừa so với đáp án — cùng
+  // loại dấu khác độ rộng như "," / "，" thì KHÔNG tính là sai) sẽ bị trừ
+  // 2 điểm trên thang 100 điểm tổng.
+  let punctErrors = 0;
+  if(ok){
+    const rawCorrect = displayAnswers[matchIdx] || accepted[matchIdx] || "";
+    punctErrors = levenshteinTokens(extractPunctTokens(rawGiven), extractPunctTokens(rawCorrect));
+    if(punctErrors > 0) translatePunctPenalty += punctErrors * PUNCT_PENALTY_PER_ERROR;
+  }
+
+  if(ok && punctErrors === 0){
+    fb.textContent = "✓ Chính xác!";
+  } else if(ok && punctErrors > 0){
+    fb.textContent = "✓ Đúng nội dung, nhưng sai "+punctErrors+" dấu câu (trừ "+(punctErrors*PUNCT_PENALTY_PER_ERROR)+" điểm). Đáp án chuẩn: "+(displayAnswers[matchIdx] || "");
+  } else {
+    fb.textContent = "✗ Đáp án đúng: "+displayAnswers.join(" / ");
+  }
+
   const act = activities[actIndex];
   if(ok) results[act.type].correct++;
-  results[act.type].detail.push({q:inp.value, ok});
+  results[act.type].detail.push({q:inp.value, ok, punctErrors});
   document.getElementById("btn-check").style.display="none";
   document.getElementById("btn-next").style.display="inline-flex";
 }
@@ -905,11 +990,15 @@ function computeScore100(){
     perType[a.type] = { points: points, weight: weight, correct: r.correct, total: r.total };
     score += points;
   });
-  return { score: Math.round(score * 10) / 10, perType: perType };
+  // Trừ điểm sai dấu câu ở phần Dịch câu (không làm câu đó bị chấm sai hoàn
+  // toàn, chỉ trừ điểm trên tổng thang 100) — xem checkTranslate().
+  const punctuationPenalty = translatePunctPenalty || 0;
+  score = Math.max(0, score - punctuationPenalty);
+  return { score: Math.round(score * 10) / 10, perType: perType, punctuationPenalty: punctuationPenalty };
 }
 
 function showResult(){
-  const { score: autoScore, perType } = computeScore100();
+  const { score: autoScore, perType, punctuationPenalty } = computeScore100();
   const breakdownEl = document.getElementById("res-breakdown");
   breakdownEl.innerHTML = "";
   activities.forEach(a=>{
@@ -929,6 +1018,15 @@ function showResult(){
       '</div>'
     );
   });
+  if(punctuationPenalty > 0){
+    breakdownEl.insertAdjacentHTML("beforeend",
+      '<div class="result-bar-row">'+
+        '<span class="result-bar-icon">✂️</span>'+
+        '<span class="result-bar-label">Trừ điểm sai dấu câu (Dịch câu)</span>'+
+        '<span class="result-bar-score">-'+punctuationPenalty+' điểm</span>'+
+      '</div>'
+    );
+  }
 
   document.getElementById("res-score").textContent = autoScore;
   document.getElementById("res-total").textContent = 100;
@@ -969,7 +1067,7 @@ async function submitResult(){
   btn.disabled=true; btn.textContent="⏳ Đang gửi…";
   st.textContent=""; st.className="submit-status";
 
-  const { score: autoScore, perType } = computeScore100();
+  const { score: autoScore, perType, punctuationPenalty } = computeScore100();
   const wordMatching = results.word_matching || {correct:0,total:0};
   const matching = results.matching || {correct:0,total:0};
   const mc = results.mc || {correct:0,total:0};
@@ -988,8 +1086,9 @@ async function submitResult(){
     word_matching: wordMatching, matching: matching, mc: mc,
     sentence_order: sentord, translate: translate,
     writing: writing.answers,
-    totalAutoScore: autoScore,   // điểm quy đổi /100 — dùng số này làm điểm chính thức
+    totalAutoScore: autoScore,   // điểm quy đổi /100 (đã trừ điểm sai dấu câu nếu có) — dùng số này làm điểm chính thức
     totalAutoMax: 100,
+    punctuationPenalty: punctuationPenalty, // tổng điểm đã trừ vì sai dấu câu ở phần Dịch câu
     scoreBreakdown: perType,     // chi tiết điểm từng dạng (đã quy đổi theo trọng số)
     // Các field tương thích ngược, phòng khi Apps Script cũ đang đọc theo tên field cũ:
     p1: wordMatching.correct, p2: matching.correct, p3: mc.correct, p4: sentord.correct, p5: translate.correct,
@@ -1009,6 +1108,7 @@ async function submitResult(){
 
 function goHome(){
   level=""; levelData=null; currentLesson=null; activities=[]; actIndex=0; itemIndex=0; results={};
+  translatePunctPenalty = 0;
   document.querySelectorAll(".level-card").forEach(el=>el.classList.remove("selected"));
   show("screen-home");
 }
