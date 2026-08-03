@@ -615,14 +615,8 @@ function renderWordMatching(body, act){
   const item = act.items[itemIndex];
   const hanzi = item.hanzi || item.word || "";
   const correct = item.vietnamese || item.nghia || "";
-  // Conditional pinyin: HSK1-2 always show if exists, HSK3+ only show if has data
-  let showPinyin = false;
-  if(level && level <= 2){
-    showPinyin = !!(item.pinyin && String(item.pinyin).trim());
-  } else if(level && level >= 3){
-    showPinyin = !!(item.pinyin && String(item.pinyin).trim());
-  }
-  const pinyin = (showPinyin ? item.pinyin : "");
+  // Conditional pinyin: show only if pinyin data exists and is not empty
+  const pinyin = (item.pinyin && String(item.pinyin).trim() ? item.pinyin : "");
   const otherOptions = act.items.filter((_,i)=>i!==itemIndex).map(x=>x.vietnamese || x.nghia).filter(v => v && String(v).trim() && v!==correct);
   const distractors = shuffle([...new Set(otherOptions)]).slice(0,3);
   const options = shuffle([correct, ...distractors]);
@@ -644,21 +638,13 @@ function renderWordMatching(body, act){
 // ── 2. MATCHING (nối ý) ──
 function renderMatching(body, act){
   const item = act.items[itemIndex];
-  // Conditional pinyin1: HSK1-2 always show if exists, HSK3+ only show if has data
-  let showPinyin1 = false;
-  if(level && (level <= 2 || (level >= 3 && item.pinyin1 && String(item.pinyin1).trim()))){
-    showPinyin1 = !!(item.pinyin1 && String(item.pinyin1).trim());
-  }
+  // Conditional pinyin1: show only if pinyin1 data exists and is not empty
   const part1 = item.part1 || "";
-  const part1Display = part1 + (showPinyin1 ? ' <span style="font-weight:400;color:var(--gray);font-size:14px">('+item.pinyin1+')</span>' : '');
+  const part1Display = part1 + (item.pinyin1 && String(item.pinyin1).trim() ? ' <span style="font-weight:400;color:var(--gray);font-size:14px">('+item.pinyin1+')</span>' : '');
 
   const correct = item.part2 || "";
-  // Conditional pinyin2: HSK1-2 always show if exists, HSK3+ only show if has data
-  let showPinyin2 = false;
-  if(level && (level <= 2 || (level >= 3 && item.pinyin2 && String(item.pinyin2).trim()))){
-    showPinyin2 = !!(item.pinyin2 && String(item.pinyin2).trim());
-  }
-  const part2Display = (showPinyin2 ? item.pinyin2 : '');
+  // Conditional pinyin2: show only if pinyin2 data exists and is not empty
+  const part2Display = (item.pinyin2 && String(item.pinyin2).trim() ? item.pinyin2 : '');
 
   const otherOptions = act.items.filter((_,i)=>i!==itemIndex).map(x=>x.part2).filter(v => v && String(v).trim() && v!==correct);
   const distractors = shuffle([...new Set(otherOptions)]).slice(0,3);
@@ -672,7 +658,7 @@ function renderMatching(body, act){
   const choicesEl = document.getElementById("q-choices");
   options.forEach((opt,i)=>{
     const div=document.createElement("div"); div.className="choice";
-    const pinyin = (showPinyin2 && part2Display && opt === correct) ? part2Display : '';
+    const pinyin = (part2Display && opt === correct) ? part2Display : '';
     const displayText = opt + (pinyin ? ' <span style="font-weight:400;color:var(--gray);font-size:14px">('+pinyin+')</span>' : '');
     div.innerHTML='<div class="badge">'+LABELS[i]+'</div><span>'+displayText+'</span>';
     div.onclick=()=>pickMatching(opt, correct, div);
@@ -932,7 +918,8 @@ function renderTranslate(body, item){
   const vn = item.vietnamese || "";
   // Dynamically find all chinese columns: chinese, chinese2, chinese3, chinese4, ...
   const rawAnswers = [];
-  if(item.chinese) rawAnswers.push(String(item.chinese || "").trim());
+  const answer1 = String(item.chinese || "").trim();
+  if(answer1) rawAnswers.push(answer1);
   for(let k = 2; k <= 99; k++){
     const chineseCol = "chinese" + k;
     const val = String(item[chineseCol] || "").trim();
