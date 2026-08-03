@@ -614,8 +614,15 @@ function goNextItem(){
 function renderWordMatching(body, act){
   const item = act.items[itemIndex];
   const hanzi = item.hanzi || item.word || "";
-  const pinyin = item.pinyin || "";
   const correct = item.vietnamese || item.nghia || "";
+  // Conditional pinyin: HSK1-2 always show if exists, HSK3+ only show if has data
+  let showPinyin = false;
+  if(level && level <= 2){
+    showPinyin = !!(item.pinyin && String(item.pinyin).trim());
+  } else if(level && level >= 3){
+    showPinyin = !!(item.pinyin && String(item.pinyin).trim());
+  }
+  const pinyin = (showPinyin ? item.pinyin : "");
   const otherOptions = act.items.filter((_,i)=>i!==itemIndex).map(x=>x.vietnamese || x.nghia).filter(v => v && String(v).trim() && v!==correct);
   const distractors = shuffle([...new Set(otherOptions)]).slice(0,3);
   const options = shuffle([correct, ...distractors]);
@@ -637,13 +644,27 @@ function renderWordMatching(body, act){
 // ── 2. MATCHING (nối ý) ──
 function renderMatching(body, act){
   const item = act.items[itemIndex];
+  // Conditional pinyin1: HSK1-2 always show if exists, HSK3+ only show if has data
+  let showPinyin1 = false;
+  if(level && (level <= 2 || (level >= 3 && item.pinyin1 && String(item.pinyin1).trim()))){
+    showPinyin1 = !!(item.pinyin1 && String(item.pinyin1).trim());
+  }
   const part1 = item.part1 || "";
+  const part1Display = part1 + (showPinyin1 ? ' <span style="font-weight:400;color:var(--gray);font-size:14px">('+item.pinyin1+')</span>' : '');
+
   const correct = item.part2 || "";
+  // Conditional pinyin2: HSK1-2 always show if exists, HSK3+ only show if has data
+  let showPinyin2 = false;
+  if(level && (level <= 2 || (level >= 3 && item.pinyin2 && String(item.pinyin2).trim()))){
+    showPinyin2 = !!(item.pinyin2 && String(item.pinyin2).trim());
+  }
+  const part2Display = (showPinyin2 ? item.pinyin2 : '');
+
   const otherOptions = act.items.filter((_,i)=>i!==itemIndex).map(x=>x.part2).filter(v => v && String(v).trim() && v!==correct);
   const distractors = shuffle([...new Set(otherOptions)]).slice(0,3);
   const options = shuffle([correct, ...distractors]);
   body.insertAdjacentHTML("beforeend",
-    '<div class="q-text">'+part1+'</div>'+
+    '<div class="q-text">'+part1Display+'</div>'+
     '<div class="choices" id="q-choices"></div>'+
     '<div class="feedback" id="q-feedback"></div>'+
     '<div class="quiz-nav"><button class="btn btn-primary" id="btn-next" disabled onclick="goNextItem()">Câu tiếp →</button></div>'
@@ -651,7 +672,9 @@ function renderMatching(body, act){
   const choicesEl = document.getElementById("q-choices");
   options.forEach((opt,i)=>{
     const div=document.createElement("div"); div.className="choice";
-    div.innerHTML='<div class="badge">'+LABELS[i]+'</div><span>'+opt+'</span>';
+    const pinyin = (showPinyin2 && part2Display && opt === correct) ? part2Display : '';
+    const displayText = opt + (pinyin ? ' <span style="font-weight:400;color:var(--gray);font-size:14px">('+pinyin+')</span>' : '');
+    div.innerHTML='<div class="badge">'+LABELS[i]+'</div><span>'+displayText+'</span>';
     div.onclick=()=>pickMatching(opt, correct, div);
     choicesEl.appendChild(div);
   });
@@ -751,9 +774,14 @@ function pickMC(chosen, q, el){
 // hai mới thật sự chuyển sang câu kế tiếp).
 function renderSentenceOrder(body, item){
   const answer = String(item.answer || "").trim();
-  const altAnswers = [item.answer2, item.answer3]
-    .map(a => String(a || "").trim())
-    .filter(a => a !== "");
+  // Dynamically find all answer columns: answer, answer2, answer3, answer4, ...
+  const altAnswers = [];
+  for(let k = 2; k <= 99; k++){
+    const answerCol = "answer" + k;
+    const val = String(item[answerCol] || "").trim();
+    if(val !== "") altAnswers.push(val);
+    else if(k > 10) break; // Stop searching after a reasonable limit
+  }
   const words = answer.split(/\s+/).filter(Boolean);
   sentordBuilt = [];
   sentordPoolUsed = new Array(words.length).fill(false);
@@ -902,9 +930,15 @@ function levenshteinTokens(a, b){
 const PUNCT_PENALTY_PER_ERROR = 2; // điểm trừ (trên thang 100) cho mỗi dấu câu sai
 function renderTranslate(body, item){
   const vn = item.vietnamese || "";
-  const rawAnswers = [item.chinese, item.chinese2, item.chinese3]
-    .map(a => String(a || "").trim())
-    .filter(a => a !== "");
+  // Dynamically find all chinese columns: chinese, chinese2, chinese3, chinese4, ...
+  const rawAnswers = [];
+  if(item.chinese) rawAnswers.push(String(item.chinese || "").trim());
+  for(let k = 2; k <= 99; k++){
+    const chineseCol = "chinese" + k;
+    const val = String(item[chineseCol] || "").trim();
+    if(val !== "") rawAnswers.push(val);
+    else if(k > 10) break; // Stop searching after a reasonable limit
+  }
   window.__translateAnswersDisplay = rawAnswers;      // để hiện đáp án gốc (có dấu câu) cho học sinh xem
   window.__translateAnswers = rawAnswers.map(a => normalizeTranslateAnswer(a)); // để so khớp, bỏ qua dấu câu
   body.insertAdjacentHTML("beforeend",
@@ -1096,7 +1130,8 @@ async function submitResult(){
   };
 
   try{
-    await fetch(HSK_URL[level],{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const resp = await fetch(HSK_URL[level],{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
     st.textContent="✓ Gửi thành công! Kết quả đã được lưu vào bảng điểm.";
     st.className="submit-status ok"; btn.textContent="✓ Đã gửi"; btn.disabled=true;
   }catch(e){
