@@ -101,6 +101,12 @@
   .feedback{margin-top:13px;padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;display:none;font-weight:600;}
   .feedback.correct{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}
   .feedback.wrong{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;}
+
+  .prev-answers{margin-top:16px;padding:12px 14px;background:#f9fafb;border:1px solid var(--border);border-radius:var(--radius-sm);}
+  .prev-answers-label{font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+  .prev-answers-list{font-size:14px;color:#1f2937;line-height:1.8;}
+  .prev-answers-item{padding:4px 0;}
+
   .quiz-nav{display:flex;justify-content:flex-end;margin-top:18px;}
 
   .result-hero{background:linear-gradient(135deg,var(--red-dk) 0%,var(--red) 100%);padding:28px 20px;text-align:center;}
@@ -345,11 +351,11 @@
 // 5 ENDPOINT — mỗi cấp 1 link Apps Script riêng (đọc + ghi dữ liệu Google Sheet)
 // ═══════════════════════════════════════════════════════
 const HSK_URL = {
-  HSK1: "https://script.google.com/macros/s/AKfycbxE5RHOfE-s5Ito2nNkTNT5lJjMXXm-22b_2vBPuv40AFBucL1zcSaxX5_-eCw-8j2Cxg/exec",
-  HSK2: "https://script.google.com/macros/s/AKfycbzaNCefhItSAwGKS6yNjPU6aGaL_uwGq7A1UpmuPfEnmBfxF6zaZCVyDkW9UJfWEaE3/exec",
-  HSK3: "https://script.google.com/macros/s/AKfycbxlC_8ZQb4CyYaJL27fWoNpnnuW6kOEIBCICfEq_Jzh8t2B3XvMXgCyLr2K2qSdh0Pz/exec",
-  HSK4: "https://script.google.com/macros/s/AKfycbxRtTxfa9ndByhZU-Tl17Fo5dOe-8rwVRiF1SWadP4eaGdhd0s1mLsHESReLvt3nJe4/exec",
-  HSK5: "https://script.google.com/macros/s/AKfycbw2EFkutz_CMUe7ttB7W02rHueE3VIszP7GJHYY3V1SzncNLc3J_i0Nh9CutJd4wsSR/exec"
+  HSK1: "https://script.google.com/macros/s/AKfycbwxFuZinupzhUrifPCQyIrrRYPov8I8tJrWwqYr2yeCEou7ByPW9Jnjhkh8uykQw3pV_w/exec",
+  HSK2: "https://script.google.com/macros/s/AKfycbzT_grFovg5hV-ZoZyAKGcYfx3mfapijtjZsGZUZIYubo0IJueDMgPFy2OmCRzZXpiS/exec",
+  HSK3: "https://script.google.com/macros/s/AKfycbxQ04lsQe1bRPgcuTCOSgNUWSm0wq_x13ZnaLZ6wteUtGnSvDa9pN53LrzdwRh1ejs9/exec",
+  HSK4: "https://script.google.com/macros/s/AKfycbwpmKxbTY2D5iY_awdmoxv-V6YN4nuh57l3S2RrBIUARsVVzRsdY2ekP9k6Kw7OEjfx/exec",
+  HSK5: "https://script.google.com/macros/s/AKfycbykW2b1TKRgg3dQD_u5Y_Pw_iIhyHjD3nu3i93G8F6Ccpc9-nRNfSnO0JZiVEhFeDE/exec"
 };
 const HSK_LABEL = {HSK1:"HSK 1",HSK2:"HSK 2",HSK3:"HSK 3",HSK4:"HSK 4",HSK5:"HSK 5"};
 const LABELS = ["A","B","C","D"];
@@ -384,6 +390,7 @@ let sentordBuilt = [];         // trạng thái sắp xếp câu hiện tại
 let sentordPoolUsed = [];
 let sentordSubmitted = false;  // đã bấm "Nộp bài" cho câu sắp xếp hiện tại chưa
 let translatePunctPenalty = 0; // tổng điểm bị trừ (thang 100) do sai dấu câu ở phần Dịch câu
+let prevAnswers = null;        // {question, answers} để hiện đáp án của câu trước khi chuyển sang câu mới
 
 function show(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
@@ -595,9 +602,59 @@ function renderStep(){
       '<div class="quiz-nav"><button class="btn btn-primary" onclick="goNextItem()">Bỏ qua, tiếp theo →</button></div>'
     );
   }
+
+  // Hiển thị đáp án của câu trước (nếu có nhiều đáp án)
+  if(prevAnswers && prevAnswers.answers && prevAnswers.answers.length > 1){
+    const answersHTML = prevAnswers.answers.map(ans =>
+      '<div class="prev-answers-item">• '+ans+'</div>'
+    ).join("");
+    body.insertAdjacentHTML("beforeend",
+      '<div class="prev-answers">'+
+        '<div class="prev-answers-label">📝 Đáp án của câu trước (để đối chiếu)</div>'+
+        '<div class="prev-answers-list">'+answersHTML+'</div>'+
+      '</div>'
+    );
+  }
+}
+
+function savePrevAnswers(){
+  const act = activities[actIndex];
+  let answers = [];
+
+  // Lấy đáp án từ câu hiện tại dựa vào loại hoạt động
+  if(act.type === "translate"){
+    const displayAnswers = window.__translateAnswersDisplay || [];
+    if(displayAnswers.length > 1){
+      answers = displayAnswers;
+    }
+  } else if(act.type === "sentence_order"){
+    const accepted = window.__sentordAccepted || [];
+    if(accepted.length > 1){
+      answers = accepted;
+    } else if(window.__sentordAnswer){
+      answers = [window.__sentordAnswer];
+    }
+  }
+
+  // Lưu nếu có nhiều đáp án
+  if(answers.length > 1){
+    const item = act.items[itemIndex];
+    let question = "";
+    if(act.type === "translate"){
+      question = item.vietnamese || "";
+    } else if(act.type === "sentence_order"){
+      question = item.vietnamese || window.__sentordAnswer || "";
+    }
+    prevAnswers = { question, answers };
+  } else {
+    prevAnswers = null;
+  }
 }
 
 function goNextItem(){
+  // Lưu đáp án của câu hiện tại trước khi chuyển sang câu mới
+  savePrevAnswers();
+
   const act = activities[actIndex];
   if(itemIndex < act.items.length - 1){
     itemIndex++;
@@ -846,7 +903,7 @@ function checkSentordDone(){
   const fb = document.getElementById("q-feedback");
   fb.style.display="block";
   fb.className = "feedback "+(ok?"correct":"wrong");
-  fb.textContent = ok ? "✓ Chính xác!" : "✗ Đáp án đúng: "+window.__sentordAnswer;
+  fb.textContent = ok ? "✓ Chính xác!" : "✗ Đáp án đúng: "+accepted.join(" / ");
   const act = activities[actIndex];
   if(ok) results[act.type].correct++;
   results[act.type].detail.push({q:window.__sentordAnswer, ok});
@@ -1131,6 +1188,7 @@ async function submitResult(){
 function goHome(){
   level=""; levelData=null; currentLesson=null; activities=[]; actIndex=0; itemIndex=0; results={};
   translatePunctPenalty = 0;
+  prevAnswers = null;
   document.querySelectorAll(".level-card").forEach(el=>el.classList.remove("selected"));
   show("screen-home");
 }
