@@ -1066,14 +1066,25 @@ function saveWriting(word, hint){
 function computeScore100(){
   let score = 0;
   const perType = {};
+
+  // Đếm số dạng bài có trong bài học (không tính writing)
+  const scoringActivities = activities.filter(a => SCORE_WEIGHTS[a.type]);
+  const numScoringTypes = scoringActivities.length;
+
+  // Tính dynamic weight: chia 100 đều cho số dạng có
+  // (nếu bài chỉ có 3 dạng, mỗi dạng 100/3 ≈ 33.33 điểm)
+  const dynamicWeight = numScoringTypes > 0 ? 100 / numScoringTypes : 0;
+
   activities.forEach(a=>{
     const weight = SCORE_WEIGHTS[a.type];
-    if(!weight) return; // flashcard / writing không tính vào 100 điểm
+    if(!weight) return; // writing không tính vào 100 điểm
+
     const r = results[a.type];
-    const points = r.total ? (r.correct / r.total) * weight : 0;
-    perType[a.type] = { points: points, weight: weight, correct: r.correct, total: r.total };
+    const points = r.total ? (r.correct / r.total) * dynamicWeight : 0;
+    perType[a.type] = { points: Math.round(points * 10) / 10, weight: Math.round(dynamicWeight * 10) / 10, correct: r.correct, total: r.total };
     score += points;
   });
+
   // Trừ điểm sai dấu câu ở phần Dịch câu (không làm câu đó bị chấm sai hoàn
   // toàn, chỉ trừ điểm trên tổng thang 100) — xem checkTranslate().
   const punctuationPenalty = translatePunctPenalty || 0;
