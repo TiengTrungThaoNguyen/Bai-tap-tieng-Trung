@@ -1147,14 +1147,21 @@ async function submitResult(){
   // Auto-save to local storage as backup
   saveResultsToLocal({name, cls, level: HSK_LABEL[level], lesson: currentLesson.lesson, ...payload});
 
-  console.log("📤 Submitting to:", HSK_URL[level]);
-  console.log("📦 Payload:", payload);
+  const endpoint = HSK_URL[level];
+  console.log("📤 Level:", level);
+  console.log("📤 Endpoint:", endpoint);
+  console.log("📦 Payload size:", JSON.stringify(payload).length, "bytes");
 
   try{
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    // Test GET first to verify endpoint is alive
+    console.log("🧪 Testing endpoint...");
+    const testResp = await fetch(endpoint + "?action=test", {timeout: 5000});
+    console.log("🧪 Test response:", testResp.status);
 
-    const resp = await fetch(HSK_URL[level], {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+    const resp = await fetch(endpoint, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(payload),
@@ -1164,11 +1171,12 @@ async function submitResult(){
     clearTimeout(timeoutId);
 
     console.log("📨 Response status:", resp.status);
+    console.log("📨 Response headers:", resp.headers);
 
     if(!resp.ok) {
       const errText = await resp.text();
-      console.error("Response error:", errText);
-      throw new Error(`HTTP ${resp.status}: ${errText}`);
+      console.error("❌ Server error:", resp.status, errText);
+      throw new Error(`HTTP ${resp.status}: ${errText.substring(0, 200)}`);
     }
 
     const resData = await resp.json();
