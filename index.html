@@ -658,7 +658,7 @@ function renderMatching(body, act){
   const choicesEl = document.getElementById("q-choices");
   options.forEach((opt,i)=>{
     const div=document.createElement("div"); div.className="choice";
-    const pinyin = (part2Display && opt === correct) ? part2Display : '';
+    const part2ToPinyin={};act.items.forEach(itm=>{if(itm.part2&&itm.pinyin2&&String(itm.pinyin2).trim()){part2ToPinyin[itm.part2]=itm.pinyin2;}});const pinyin=part2ToPinyin[opt]||'';
     const displayText = opt + (pinyin ? ' <span style="font-weight:400;color:var(--gray);font-size:14px">('+pinyin+')</span>' : '');
     div.innerHTML='<div class="badge">'+LABELS[i]+'</div><span>'+displayText+'</span>';
     div.onclick=()=>pickMatching(opt, correct, div);
@@ -1083,6 +1083,32 @@ function showResult(){
   submitResult();
 }
 
+
+// ════ LOCAL STORAGE AUTO-SAVE ════
+function saveResultsToLocal(results){
+  try{
+    const data = {timestamp: new Date().toISOString(), ...results};
+    localStorage.setItem('hsk_results_backup', JSON.stringify(data));
+    console.log('✓ Results saved to local storage');
+  }catch(e){
+    console.warn('Could not save to local storage:', e);
+  }
+}
+function getLocalResults(){
+  try{
+    const data = localStorage.getItem('hsk_results_backup');
+    return data ? JSON.parse(data) : null;
+  }catch(e){
+    console.warn('Could not read from local storage:', e);
+    return null;
+  }
+}
+function clearLocalResults(){
+  try{
+    localStorage.removeItem('hsk_results_backup');
+  }catch(e){}
+}
+// ════════════════════════════════════════
 async function submitResult(){
   const btn=document.getElementById("btn-submit"), st=document.getElementById("submit-status");
   btn.disabled=true; btn.textContent="⏳ Đang gửi…";
@@ -1116,13 +1142,17 @@ async function submitResult(){
     writingAnswers: writing.answers.map((a,i)=>(i+1)+". "+a.word+": "+a.answer).join(" | ")
   };
 
+  // Auto-save to local storage as backup
+  saveResultsToLocal({name, cls, level: HSK_LABEL[level], lesson: currentLesson.lesson, ...payload});
+  
   try{
     const resp = await fetch(HSK_URL[level],{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
     st.textContent="✓ Gửi thành công! Kết quả đã được lưu vào bảng điểm.";
     st.className="submit-status ok"; btn.textContent="✓ Đã gửi"; btn.disabled=true;
+    clearLocalResults();
   }catch(e){
-    st.textContent="✗ Lỗi kết nối. Bấm để gửi lại.";
+    st.textContent="⚠ Lỗi kết nối nhưng dữ liệu đã lưu. Bấm để gửi lại.";
     st.className="submit-status err"; btn.disabled=false;
     btn.textContent="☁ Gửi kết quả lên bảng điểm";
   }
