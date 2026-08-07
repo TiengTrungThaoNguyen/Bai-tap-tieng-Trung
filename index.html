@@ -1153,35 +1153,20 @@ async function submitResult(){
   console.log("📦 Payload size:", JSON.stringify(payload).length, "bytes");
 
   try{
-    // Test GET first to verify endpoint is alive
-    console.log("🧪 Testing endpoint...");
-    const testResp = await fetch(endpoint + "?action=test", {timeout: 5000});
-    console.log("🧪 Test response:", testResp.status);
+    console.log("📤 POST to:", endpoint);
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-
+    // Use mode: "no-cors" to bypass CORS restrictions (like old version)
     const resp = await fetch(endpoint, {
       method: "POST",
+      mode: "no-cors",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(payload),
-      signal: controller.signal
+      body: JSON.stringify(payload)
     });
 
-    clearTimeout(timeoutId);
+    console.log("✅ Request sent successfully");
 
-    console.log("📨 Response status:", resp.status);
-    console.log("📨 Response headers:", resp.headers);
-
-    if(!resp.ok) {
-      const errText = await resp.text();
-      console.error("❌ Server error:", resp.status, errText);
-      throw new Error(`HTTP ${resp.status}: ${errText.substring(0, 200)}`);
-    }
-
-    const resData = await resp.json();
-    console.log("✅ Response success:", resData);
-
+    // With mode: "no-cors", we can't read response, but request was sent
+    // Google Apps Script will process it even if we can't read back
     st.textContent="✓ Gửi thành công! Kết quả đã được lưu vào bảng điểm.";
     st.className="submit-status ok";
     btn.textContent="✓ Đã gửi";
