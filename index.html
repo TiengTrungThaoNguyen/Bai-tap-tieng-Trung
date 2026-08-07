@@ -1003,16 +1003,19 @@ function saveWriting(word, hint){
 function computeScore100(){
   let score = 0;
   const perType = {};
+
+  // Count how many scoring types are actually present
+  const scoringTypes = activities.filter(a => SCORE_WEIGHTS[a.type]).length;
+  const dynamicWeight = scoringTypes > 0 ? 100 / scoringTypes : 0;
+
   activities.forEach(a=>{
-    const weight = SCORE_WEIGHTS[a.type];
-    if(!weight) return; // flashcard / writing không tính vào 100 điểm
+    if(!SCORE_WEIGHTS[a.type]) return; // skip writing types
     const r = results[a.type];
-    const points = r.total ? (r.correct / r.total) * weight : 0;
-    perType[a.type] = { points: points, weight: weight, correct: r.correct, total: r.total };
+    const points = r.total ? (r.correct / r.total) * dynamicWeight : 0;
+    perType[a.type] = { points: points, weight: dynamicWeight, correct: r.correct, total: r.total };
     score += points;
   });
-  // Trừ điểm sai dấu câu ở phần Dịch câu (không làm câu đó bị chấm sai hoàn
-  // toàn, chỉ trừ điểm trên tổng thang 100) — xem checkTranslate().
+  // Trừ điểm sai dấu câu ở phần Dịch câu
   const punctuationPenalty = translatePunctPenalty || 0;
   score = Math.max(0, score - punctuationPenalty);
   return { score: Math.round(score * 10) / 10, perType: perType, punctuationPenalty: punctuationPenalty };
@@ -1133,27 +1136,54 @@ async function submitResult(){
     word_matching: wordMatching, matching: matching, mc: mc,
     sentence_order: sentord, translate: translate,
     writing: writing.answers,
-    totalAutoScore: autoScore,   // điểm quy đổi /100 (đã trừ điểm sai dấu câu nếu có) — dùng số này làm điểm chính thức
+    totalAutoScore: autoScore,
     totalAutoMax: 100,
-    punctuationPenalty: punctuationPenalty, // tổng điểm đã trừ vì sai dấu câu ở phần Dịch câu
-    scoreBreakdown: perType,     // chi tiết điểm từng dạng (đã quy đổi theo trọng số)
-    // Các field tương thích ngược, phòng khi Apps Script cũ đang đọc theo tên field cũ:
+    punctuationPenalty: punctuationPenalty,
+    scoreBreakdown: perType,
     p1: wordMatching.correct, p2: matching.correct, p3: mc.correct, p4: sentord.correct, p5: translate.correct,
     writingAnswers: writing.answers.map((a,i)=>(i+1)+". "+a.word+": "+a.answer).join(" | ")
   };
 
   // Auto-save to local storage as backup
   saveResultsToLocal({name, cls, level: HSK_LABEL[level], lesson: currentLesson.lesson, ...payload});
-  
+
+  console.log("📤 Submitting to:", HSK_URL[level]);
+  console.log("📦 Payload:", payload);
+
   try{
-    const resp = await fetch(HSK_URL[level],{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+    const resp = await fetch(HSK_URL[level], {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    console.log("📨 Response status:", resp.status);
+
+    if(!resp.ok) {
+      const errText = await resp.text();
+      console.error("Response error:", errText);
+      throw new Error(`HTTP ${resp.status}: ${errText}`);
+    }
+
+    const resData = await resp.json();
+    console.log("✅ Response success:", resData);
+
     st.textContent="✓ Gửi thành công! Kết quả đã được lưu vào bảng điểm.";
-    st.className="submit-status ok"; btn.textContent="✓ Đã gửi"; btn.disabled=true;
+    st.className="submit-status ok";
+    btn.textContent="✓ Đã gửi";
+    btn.disabled=true;
     clearLocalResults();
   }catch(e){
-    st.textContent="⚠ Lỗi kết nối nhưng dữ liệu đã lưu. Bấm để gửi lại.";
-    st.className="submit-status err"; btn.disabled=false;
+    console.error("❌ Fetch error:", e.message);
+    st.textContent="⚠️ Lỗi kết nối những dữ liệu đã lưu. Bấm để gửi lại.";
+    st.className="submit-status err";
+    btn.disabled=false;
     btn.textContent="☁ Gửi kết quả lên bảng điểm";
   }
 }
